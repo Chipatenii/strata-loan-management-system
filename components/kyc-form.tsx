@@ -50,7 +50,6 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
                     user_id: userId,
                     business_id: businessId,
                     status: 'pending_review',
-                    status: 'pending_review',
                     id_document_url: idPath,
                     proof_of_address_url: proofPath,
                     data: { uploaded_at: new Date().toISOString() }
