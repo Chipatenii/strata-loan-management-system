@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useTransition, useState } from "react"
-import { createLoanProduct, createProductRate, deleteProductRate } from "@/lib/actions/products"
+import { createLoanProduct, createProductRate, deleteProductRate, updateLoanProduct } from "@/lib/actions/products"
 import { toast } from "sonner"
 import { Loader2, Trash2, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -59,7 +59,6 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         startTransition(async () => {
-            // TODO: Handle Update if isEditing
             if (!isEditing) {
                 const result = await createLoanProduct(formData as any, businessId)
                 if (result.error) {
@@ -69,8 +68,13 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
                     router.push('/admin/products')
                 }
             } else {
-                // Update logic here (omitted for brevity in this step, focusing on creation first)
-                toast.info("Update logic implemented in next step if needed")
+                const result = await updateLoanProduct(product.id, formData)
+                if (result.error) {
+                    toast.error(result.error)
+                } else {
+                    toast.success("Product updated")
+                    router.refresh()
+                }
             }
         })
     }

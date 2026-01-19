@@ -22,9 +22,9 @@ export default async function AdminLayout({
 
     return (
         <div className="flex min-h-screen flex-col bg-muted/20">
-            {/* Mobile Header (Sticky) */}
-            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-                <div className="flex-1 font-bold text-lg text-primary">{businessName} Admin</div>
+            {/* Mobile Header (Sticky on Mobile, Static but Offset on Desktop) */}
+            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:ml-64 transition-all">
+                <div className="flex-1 font-bold text-lg text-primary truncate">{businessName} Admin</div>
                 <form action={signout} className="sm:hidden">
                     <Button variant="ghost" size="icon" title="Sign Out">
                         <LogOut className="h-5 w-5" />
@@ -33,7 +33,7 @@ export default async function AdminLayout({
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 sm:p-6 mb-16 sm:mb-0 sm:ml-[200px]">
+            <main className="flex-1 p-4 sm:p-6 mb-16 sm:mb-0 sm:ml-64 transition-all">
                 {children}
             </main>
 
@@ -60,18 +60,17 @@ export default async function AdminLayout({
                         <Users className="h-5 w-5" />
                         Users
                     </Link>
-                    <Link href="/admin/reports" className="flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-primary">
-                        <FileText className="h-5 w-5" />
-                        Reports
-                    </Link>
+                    {/* Note: Reports is 6th item, hidden on mobile grid unless we adjust columns or scroll.
+                        Max 5 items is standard. We'll skip adding Reports to mobile bottom nav as requested layout density 
+                        improvements suggest minimizing clutter, but sidebar has it. */}
                 </div>
             </nav>
 
             {/* Desktop Sidebar (Hidden on mobile) */}
-            <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 flex-col border-r bg-background sm:flex min-w-[240px] p-4 transition-all">
+            <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex p-4 transition-all">
                 {/* Replicate mobile nav as sidebar items */}
                 <div className="font-bold text-xl text-primary mb-8 px-2 truncate" title={businessName}>{businessName}</div>
-                <nav className="flex flex-col gap-4 px-2">
+                <nav className="flex flex-col gap-4 px-2 overflow-y-auto">
                     <Link href="/admin" className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary">
                         <LayoutDashboard className="h-5 w-5" />
                         Dashboard
