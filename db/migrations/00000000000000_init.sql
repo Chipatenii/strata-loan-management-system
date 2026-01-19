@@ -159,7 +159,7 @@ create policy "Admins can update all loans" on public.loans
 -- Ledger
 -- Users can read ledger for their loans
 create policy "Users can read own ledger" on public.ledger
-  for select using (exists (select 1 from public.loans where display_id = ledger.loan_id and user_id = auth.uid())); -- oops loans.id
+  for select using (exists (select 1 from public.loans where id = ledger.loan_id and user_id = auth.uid()));
 -- Fix join
 create policy "Users can read own ledger 2" on public.ledger
   for select using (exists (select 1 from public.loans where id = ledger.loan_id and user_id = auth.uid()));
