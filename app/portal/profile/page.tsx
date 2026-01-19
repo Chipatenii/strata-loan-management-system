@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function ProfilePage() {
     const supabase = await createClient()
@@ -58,6 +60,18 @@ export default async function ProfilePage() {
                         </div>
                     )}
                 </CardContent>
+                <CardFooter>
+                    {(!kyc || kyc.status === 'not_submitted' || kyc.status === 'rejected') && (
+                        <Button asChild className="w-full">
+                            <Link href="/portal/kyc">Complete Verification</Link>
+                        </Button>
+                    )}
+                    {kyc?.status === 'pending_review' && (
+                        <Button variant="outline" className="w-full" disabled>
+                            Verification In Progress
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     )

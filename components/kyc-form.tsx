@@ -16,6 +16,8 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
     const router = useRouter()
     // Files state
     const [idFile, setIdFile] = useState<File | null>(null)
+    const [payslipFile, setPayslipFile] = useState<File | null>(null)
+    const [bankStatementFile, setBankStatementFile] = useState<File | null>(null)
     const [proofFile, setProofFile] = useState<File | null>(null)
 
     const handleUpload = async (bucket: string, file: File, path: string) => {
@@ -30,7 +32,7 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!idFile || !proofFile) {
+        if (!idFile || !payslipFile || !bankStatementFile || !proofFile) {
             toast.error("Please upload all required documents.")
             return
         }
@@ -40,9 +42,12 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
                 const supabase = createBrowserSupabaseClient()
                 const timestamp = Date.now()
 
-                // 1. Upload Files
                 toast.info("Uploading documents...")
+
+                // Parallel uploads if possible, but sequential is safer for error handling in this context
                 const idPath = await handleUpload('kyc-docs', idFile, `${userId}/id_${timestamp}_${idFile.name}`)
+                const payslipPath = await handleUpload('kyc-docs', payslipFile, `${userId}/payslip_${timestamp}_${payslipFile.name}`)
+                const bankPath = await handleUpload('kyc-docs', bankStatementFile, `${userId}/bank_${timestamp}_${bankStatementFile.name}`)
                 const proofPath = await handleUpload('kyc-docs', proofFile, `${userId}/proof_${timestamp}_${proofFile.name}`)
 
                 // 2. Insert KYC Record
@@ -51,6 +56,8 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
                     business_id: businessId,
                     status: 'pending_review',
                     id_document_url: idPath,
+                    payslip_url: payslipPath,
+                    bank_statement_url: bankPath,
                     proof_of_address_url: proofPath,
                     data: { uploaded_at: new Date().toISOString() }
                 })
@@ -73,7 +80,7 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
             <CardHeader>
                 <CardTitle>KYC Submission</CardTitle>
                 <CardDescription>
-                    Verify your identity to access loans. We require a clear ID and Proof of Address.
+                    Verify your identity to access loans. Please upload all required documents.
                 </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
@@ -92,7 +99,31 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="proof_doc">Proof of Address / Payslip</Label>
+                        <Label htmlFor="payslip_doc">Payslip (Most Recent)</Label>
+                        <Input
+                            id="payslip_doc"
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => setPayslipFile(e.target.files?.[0] || null)}
+                            disabled={pending}
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="bank_doc">Bank Statements (3 Months)</Label>
+                        <Input
+                            id="bank_doc"
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => setBankStatementFile(e.target.files?.[0] || null)}
+                            disabled={pending}
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="proof_doc">Proof of Address</Label>
                         <Input
                             id="proof_doc"
                             type="file"
@@ -101,7 +132,7 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
                             disabled={pending}
                             required
                         />
-                        <p className="text-xs text-muted-foreground">Utility bill, bank statement, or employment letter.</p>
+                        <p className="text-xs text-muted-foreground">Utility bill or lease agreement.</p>
                     </div>
                 </CardContent>
                 <CardFooter>

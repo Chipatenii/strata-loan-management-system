@@ -27,7 +27,10 @@ function SignUpForm() {
         email: '',
         password: '',
         confirmPassword: '',
-        businessCode: codeParam
+        businessCode: codeParam,
+        fullName: '',
+        phone: '',
+        address: ''
     })
 
 
@@ -73,6 +76,40 @@ function SignUpForm() {
                             onChange={handleChange}
                             disabled={pending || !!codeParam}
                         />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                            id="fullName"
+                            placeholder="John Doe"
+                            required
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            disabled={pending}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                            id="phone"
+                            placeholder="+260..."
+                            required
+                            value={formData.phone}
+                            onChange={handleChange}
+                            disabled={pending}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="address">Physical Address</Label>
+                        <Input
+                            id="address"
+                            placeholder="Plot 123, Street Name, City"
+                            required
+                            value={formData.address}
+                            onChange={handleChange}
+                            disabled={pending}
+                        />
+
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>

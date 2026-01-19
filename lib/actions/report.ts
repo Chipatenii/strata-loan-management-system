@@ -48,7 +48,7 @@ export async function getBusinessReports(
             .from('payments')
             .select('amount, created_at')
             .eq('business_id', businessId)
-            .eq('status', 'verified') // Only verified payments
+            .eq('status', 'approved') // Only approved payments
             .gte('created_at', fromISO)
             .lte('created_at', toISO)
 

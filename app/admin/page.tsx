@@ -15,12 +15,47 @@ export default async function AdminDashboard() {
     const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
     const { data: business } = await supabase.from('businesses').select('*').eq('id', profile?.business_id).single()
 
-    // Mock KPIs for now, but Invite Widget is real
     // Prioritize configured APP_URL, then Vercel specific URL, then localhost
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
         || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000')
 
     const inviteLink = `${baseUrl}/auth/customer/sign-up?code=${business?.code}`
+
+    // Real Metrics using Supabase counts/sums
+    // 1. Pending Loans
+    const { count: pendingLoans } = await supabase
+        .from('loans')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', business.id)
+        .eq('status', 'pending')
+
+    // 2. Pending KYC
+    // We need to filter KYC by users belonging to this business. 
+    // This requires a join or two-step. 
+    // Join: kyc_records -> users -> business_id
+    const { count: pendingKyc } = await supabase
+        .from('kyc_records')
+        .select('*, users!inner(business_id)', { count: 'exact', head: true })
+        .eq('status', 'pending_review')
+        .eq('users.business_id', business.id)
+
+    // 3. Total Disbursed (Active + Closed + Defaulted)
+    const { data: disbursedLoans } = await supabase
+        .from('loans')
+        .select('amount')
+        .eq('business_id', business.id)
+        .in('status', ['active', 'closed', 'defaulted'])
+
+    const totalDisbursed = disbursedLoans?.reduce((sum, loan) => sum + Number(loan.amount), 0) || 0
+
+    // 4. Outstanding (Active + Defaulted) - Principal only for dashboard speed
+    const { data: activeLoans } = await supabase
+        .from('loans')
+        .select('amount')
+        .eq('business_id', business.id)
+        .in('status', ['active', 'defaulted'])
+
+    const totalOutstanding = activeLoans?.reduce((sum, loan) => sum + Number(loan.amount), 0) || 0
 
     return (
         <div className="space-y-6">
@@ -35,7 +70,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-2xl font-bold">{formatCurrency(totalDisbursed)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -45,7 +80,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">0</div>
+                        <div className="text-2xl font-bold">{pendingKyc || 0}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -55,7 +90,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">0</div>
+                        <div className="text-2xl font-bold">{pendingLoans || 0}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -65,7 +100,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-2xl font-bold">{formatCurrency(totalOutstanding)}</div>
                     </CardContent>
                 </Card>
             </div>

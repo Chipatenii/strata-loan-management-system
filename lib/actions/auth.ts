@@ -142,7 +142,9 @@ export async function signUpCustomer(formData: z.infer<typeof customerRegisterSc
             email: formData.email,
             role: 'customer',
             business_id: businessData.id,
-            full_name: 'Customer', // Placeholder
+            full_name: formData.fullName,
+            phone: formData.phone,
+            address: formData.address,
         })
 
     if (userError) {
