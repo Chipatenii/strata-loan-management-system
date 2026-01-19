@@ -83,6 +83,34 @@ async function diagnose() {
         })
     }
 
+    // 5. Check KYC Records
+    const { data: kyc, error: kErr } = await supabase
+        .from('kyc_records')
+        .select('id, user_id, business_id, status')
+
+    if (kErr) console.error('Error fetching KYC:', kErr)
+    else {
+        console.log(`Total KYC Records: ${kyc?.length}`)
+        const kycOrphans = kyc?.filter(k => !k.business_id)
+        const kycDefaults = kyc?.filter(k => k.business_id === '00000000-0000-0000-0000-000000000000')
+        console.log(`Orphan KYC: ${kycOrphans?.length}`)
+        console.log(`Default Business KYC: ${kycDefaults?.length}`)
+        const kycTarget = kyc?.filter(k => k.business_id === targetBiz?.id)
+        console.log(`Target Business KYC: ${kycTarget?.length} (Should be > 0 if user submitted)`)
+    }
+
+    // 6. Check Loan Products
+    const { data: products, error: pErr } = await supabase
+        .from('loan_products')
+        .select('id, name, business_id, is_active')
+
+    if (pErr) console.error('Error fetching Products:', pErr)
+    else {
+        console.log(`Total Products: ${products?.length}`)
+        const prodTarget = products?.filter(p => p.business_id === targetBiz?.id)
+        console.log(`Target Business Products: ${prodTarget?.length}`)
+    }
+
     console.log('--- END DIAGNOSIS ---')
 }
 
