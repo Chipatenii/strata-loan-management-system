@@ -127,7 +127,7 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="amount">Amount Paid (MWK)</Label>
+                        <Label htmlFor="amount">Amount Paid (ZMW)</Label>
                         <Input
                             id="amount"
                             type="number"

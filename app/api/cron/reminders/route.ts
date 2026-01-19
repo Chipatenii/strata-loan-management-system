@@ -59,7 +59,7 @@ export async function GET(request: Request) {
                     channel: 'sms', // Pilot default
                     recipient: loan.user_id, // Placeholder, would fetch phone
                     subject: 'Loan Due Reminder',
-                    body: `Your loan of MWK ${loan.amount} is due soon. Please make a payment via the portal.`,
+                    body: `Your loan of ZMW ${loan.amount} is due soon. Please make a payment via the portal.`,
                     status: 'pending'
                 })
                 sentCount++

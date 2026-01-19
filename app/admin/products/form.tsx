@@ -123,11 +123,11 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="min_amount">Min Amount (MWK)</Label>
+                                <Label htmlFor="min_amount">Min Amount (ZMW)</Label>
                                 <Input id="min_amount" type="number" value={formData.min_amount} onChange={handleChange} disabled={pending} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="max_amount">Max Amount (MWK)</Label>
+                                <Label htmlFor="max_amount">Max Amount (ZMW)</Label>
                                 <Input id="max_amount" type="number" value={formData.max_amount} onChange={handleChange} disabled={pending} />
                             </div>
                         </div>

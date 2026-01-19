@@ -12,6 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { formatCurrency } from "@/lib/utils"
 
 export default async function ProductsPage() {
     const supabase = await createClient()
@@ -82,10 +83,10 @@ export default async function ProductsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm">
-                                                Min: {product.min_amount ? `MWK ${product.min_amount}` : 'N/A'}
+                                                Min: {product.min_amount ? formatCurrency(product.min_amount) : 'N/A'}
                                             </div>
                                             <div className="text-sm">
-                                                Max: {product.max_amount ? `MWK ${product.max_amount}` : 'N/A'}
+                                                Max: {product.max_amount ? formatCurrency(product.max_amount) : 'N/A'}
                                             </div>
                                         </TableCell>
                                         <TableCell>

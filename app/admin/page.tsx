@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Copy, Plus } from "lucide-react"
+import { Copy, Plus, FileText, Banknote, BarChart3 } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
 
 export default async function AdminDashboard() {
     const supabase = await createClient()
@@ -34,7 +35,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">MWK 0.00</div>
+                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -64,7 +65,7 @@ export default async function AdminDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">MWK 0.00</div>
+                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -98,17 +99,29 @@ export default async function AdminDashboard() {
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                        <Link href="/admin/products">
-                            <Button variant="outline" className="w-full justify-start">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Loan Product
+                    <CardContent className="grid grid-cols-2 gap-4">
+                        <Link href="/admin/products" className="w-full">
+                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <Plus className="h-6 w-6" />
+                                <span className="text-xs font-semibold">New Product</span>
                             </Button>
                         </Link>
-                        <Link href="/admin/loans">
-                            <Button variant="outline" className="w-full justify-start">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Review Applications
+                        <Link href="/admin/loans" className="w-full">
+                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <FileText className="h-6 w-6" />
+                                <span className="text-xs font-semibold">Review Loans</span>
+                            </Button>
+                        </Link>
+                        <Link href="/admin/payments" className="w-full">
+                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <Banknote className="h-6 w-6" />
+                                <span className="text-xs font-semibold">Record Pay</span>
+                            </Button>
+                        </Link>
+                        <Link href="/admin/reports" className="w-full">
+                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <BarChart3 className="h-6 w-6" />
+                                <span className="text-xs font-semibold">View Reports</span>
                             </Button>
                         </Link>
                     </CardContent>

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -21,7 +22,7 @@ export default function PortalDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">MWK 0.00</div>
+                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
                     </CardContent>
                 </Card>
                 <Card>

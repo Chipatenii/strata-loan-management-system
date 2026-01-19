@@ -8,6 +8,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { PaymentReviewActions } from "@/components/admin/payment-actions"
+import { formatCurrency } from "@/lib/utils"
 
 export default async function PaymentQueuePage() {
     const supabase = await createClient()
@@ -47,7 +48,7 @@ export default async function PaymentQueuePage() {
                                     <div className="font-medium">{payment.users?.full_name || 'Unknown'}</div>
                                     <div className="text-xs text-muted-foreground">{payment.users?.email}</div>
                                 </TableCell>
-                                <TableCell>MWK {payment.amount.toLocaleString()}</TableCell>
+                                <TableCell>{formatCurrency(payment.amount)}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
                                         <span>{payment.method}</span>

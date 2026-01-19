@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -48,7 +49,7 @@ export default async function LoansListPage() {
                             </Badge>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">MWK {loan.amount.toLocaleString()}</div>
+                            <div className="text-2xl font-bold">{formatCurrency(loan.amount)}</div>
                             <p className="text-xs text-muted-foreground">
                                 {loan.duration_months} Months • {loan.purpose}
                             </p>

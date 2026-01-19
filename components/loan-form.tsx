@@ -74,7 +74,7 @@ export function LoanApplicationForm({ userId, businessId }: { userId: string, bu
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="amount">Amount (MWK)</Label>
+                        <Label htmlFor="amount">Amount (ZMW)</Label>
                         <Input
                             id="amount"
                             type="number"

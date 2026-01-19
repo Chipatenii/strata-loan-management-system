@@ -8,6 +8,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { LoanReviewActions } from "@/components/admin/loan-actions"
+import { formatCurrency } from "@/lib/utils"
 
 export default async function LoanQueuePage() {
     const supabase = await createClient()
@@ -47,7 +48,7 @@ export default async function LoanQueuePage() {
                                     <div className="font-medium">{loan.users?.full_name || 'Unknown'}</div>
                                     <div className="text-xs text-muted-foreground">{loan.users?.email}</div>
                                 </TableCell>
-                                <TableCell>MWK {loan.amount.toLocaleString()}</TableCell>
+                                <TableCell>{formatCurrency(loan.amount)}</TableCell>
                                 <TableCell>{loan.duration_months} Months</TableCell>
                                 <TableCell className="max-w-[200px] truncate" title={loan.purpose}>{loan.purpose}</TableCell>
                                 <TableCell>

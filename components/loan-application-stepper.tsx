@@ -12,6 +12,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Building2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
+import { formatCurrency } from "@/lib/utils"
 
 type Product = {
     id: string
@@ -122,7 +123,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                             <div className="font-semibold">{product.name}</div>
                             <div className="text-sm text-muted-foreground mt-1 mb-2">{product.description || 'No description'}</div>
                             <div className="flex gap-2 text-xs">
-                                {product.min_amount && <Badge variant="outline">Min: {product.min_amount.toLocaleString()}</Badge>}
+                                {product.min_amount && <Badge variant="outline">Min: {product.min_amount ? formatCurrency(product.min_amount) : 'N/A'}</Badge>}
                                 {product.requires_collateral && <Badge variant="destructive">Collateral</Badge>}
                             </div>
                         </div>
@@ -168,7 +169,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="amount">Amount (MWK)</Label>
+                        <Label htmlFor="amount">Amount (ZMW)</Label>
                         <Input
                             id="amount"
                             type="number"
@@ -177,7 +178,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                             min={selectedProduct?.min_amount || 0}
                             max={selectedProduct?.max_amount || undefined}
                         />
-                        {selectedProduct?.min_amount && <span className="text-xs text-muted-foreground">Min: {selectedProduct.min_amount.toLocaleString()}</span>}
+                        {selectedProduct?.min_amount && <span className="text-xs text-muted-foreground">Min: {formatCurrency(selectedProduct.min_amount)}</span>}
                     </div>
 
                     <div className="space-y-2">
@@ -221,7 +222,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                 <CardContent className="space-y-4">
                     <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
                         <div className="flex justify-between"><span>Product:</span> <span className="font-semibold">{selectedProduct?.name}</span></div>
-                        <div className="flex justify-between"><span>Amount:</span> <span className="font-semibold">MWK {parseFloat(amount).toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span>Amount:</span> <span className="font-semibold">{formatCurrency(parseFloat(amount))}</span></div>
                         <div className="flex justify-between"><span>Duration:</span> <span className="font-semibold">{selectedRate?.duration_value} {selectedRate?.duration_unit}(s)</span></div>
                         <div className="flex justify-between"><span>Interest:</span> <span className="font-semibold">{selectedRate?.interest_rate}%</span></div>
                     </div>
