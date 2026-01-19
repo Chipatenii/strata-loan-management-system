@@ -79,8 +79,13 @@ export default function AdminLoginPage() {
                     <Button className="w-full" type="submit" disabled={pending}>
                         {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
                     </Button>
-                    <div className="text-sm text-center text-muted-foreground">
-                        New business? <Link href="/auth/admin/sign-up" className="underline hover:text-primary">Create account</Link>
+                    <div className="flex flex-col gap-2 text-center text-sm">
+                        <Link href="/auth/admin/forgot-password" className="text-muted-foreground hover:text-primary">
+                            Forgot password?
+                        </Link>
+                        <span className="text-muted-foreground">
+                            New business? <Link href="/auth/admin/sign-up" className="underline hover:text-primary">Create account</Link>
+                        </span>
                     </div>
                 </CardFooter>
             </form>

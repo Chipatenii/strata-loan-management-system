@@ -20,12 +20,20 @@
 
 1. Import repo from GitHub.
 2. Set Environment Variables:
+    - `NEXT_PUBLIC_APP_URL`: [Your Production URL, e.g., https://myapp.vercel.app]
     - `NEXT_PUBLIC_SUPABASE_URL`: [Your Project URL]
     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: [Your Anon Key]
     - `SUPABASE_SERVICE_ROLE_KEY`: [Your Service Role Key]
     - `CRON_SECRET`: [Random String]
     - `PILOT_INVITE_CODES`: `STRATA2025,PILOT2025`
 3. Deploy.
+
+## Step 3: Supabase Auth Configuration (Required for Password Reset)
+
+1. Go to Supabase Dashboard -> **Authentication** -> **URL Configuration**.
+2. **Site URL**: Set to your production URL (e.g., `https://myapp.vercel.app`).
+3. **Redirect URLs**: Add `https://myapp.vercel.app/auth/callback`.
+   - *Note: Ensure you also have `http://localhost:3000/auth/callback` for local development.*
 
 ## Step 3: Cron Job
 

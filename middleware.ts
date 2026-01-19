@@ -60,8 +60,11 @@ export async function middleware(request: NextRequest) {
 
     // 2. Authenticated Users
     if (user) {
-        // Redirect away from Auth pages if already logged in
-        if (path.startsWith('/auth') || path === '/login' || path === '/register') {
+        // Redirect away from Auth pages if already logged in, EXCEPT for reset-password pages
+        // The reset link logs the user in, so they must be allowed to view the reset page to type new password.
+        const isResetPage = path === '/auth/customer/reset-password' || path === '/auth/admin/reset-password'
+
+        if ((path.startsWith('/auth') || path === '/login' || path === '/register') && !isResetPage) {
             if (userRole === 'admin') {
                 return NextResponse.redirect(new URL('/admin', request.url))
             } else {
