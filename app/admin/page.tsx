@@ -15,7 +15,11 @@ export default async function AdminDashboard() {
     const { data: business } = await supabase.from('businesses').select('*').eq('id', profile?.business_id).single()
 
     // Mock KPIs for now, but Invite Widget is real
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/customer/sign-up?code=${business?.code}`
+    // Prioritize configured APP_URL, then Vercel specific URL, then localhost
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+        || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000')
+
+    const inviteLink = `${baseUrl}/auth/customer/sign-up?code=${business?.code}`
 
     return (
         <div className="space-y-6">
