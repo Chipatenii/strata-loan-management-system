@@ -1,0 +1,40 @@
+# Security Architecture
+
+## 1. Authentication & Authorization
+
+- **Supabase Auth**: Managed authentication (Email/Password).
+- **Middleware**: `middleware.ts` forces session validation on `/portal` and `/admin` routes.
+- **Role-Based Access**:
+  - `users` table has `role` enum ('customer', 'admin').
+  - RLS policies restrict access to 'admin' role for sensitive data.
+
+## 2. Row Level Security (RLS)
+
+Every table has RLS enabled.
+
+- **Customers**: Can only `SELECT` their own data (`user_id = auth.uid()`).
+- **Customers**: Can only `INSERT` their own data.
+- **Admins**: Can `SELECT` and `UPDATE` all data (Policy: `exists (select 1 from users where id = auth.uid() and role = 'admin')`).
+
+## 3. Storage Security
+
+Supabase Storage buckets are private.
+
+- Policies ensure users can only upload files to their own folder paths: `{userId}/*`.
+- Admins can read all files.
+- Signed URLs or strict RLS-based reads are required to view files.
+
+## 4. Input Validation
+
+- **Zod**: All Server Actions validate inputs against strict Zod schemas before processing.
+- **Sanitization**: React escapes output by default.
+
+## 5. Audit Logging
+
+- Critical actions (KYC Approval, Loan Approval, Payment Reconciliation) record `reviewed_by` and timestamp fields in the database.
+- Future: Dedicated `audit_logs` table.
+
+## 6. Secrets Management
+
+- `SUPABASE_SERVICE_ROLE_KEY` is NEVER exposed to the client. It is only used in trusted server environments (Cron).
+- `CRON_SECRET` protects the cron endpoint.
