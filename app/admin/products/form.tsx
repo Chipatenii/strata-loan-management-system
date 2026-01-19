@@ -47,6 +47,9 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
         interest_rate: '15'
     })
 
+    // Temp Rates for creation mode
+    const [tempRates, setTempRates] = useState<any[]>([])
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value
         setFormData(prev => ({ ...prev, [e.target.id]: val }))
@@ -60,11 +63,12 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
         e.preventDefault()
         startTransition(async () => {
             if (!isEditing) {
-                const result = await createLoanProduct(formData as any, businessId)
+                // Pass tempRates to creation action
+                const result = await createLoanProduct(formData as any, businessId, tempRates)
                 if (result.error) {
                     toast.error(result.error)
                 } else {
-                    toast.success("Product created")
+                    toast.success("Product created successfully")
                     router.push('/admin/products')
                 }
             } else {
@@ -80,41 +84,69 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
     }
 
     const handleAddRate = async () => {
-        if (!product) return
+        // Validation
+        if (!newRate.duration_value || !newRate.interest_rate) {
+            toast.error("Please enter duration and interest rate")
+            return
+        }
 
-        startTransition(async () => {
-            const result = await createProductRate({
-                product_id: product.id,
-                duration_unit: newRate.duration_unit as 'month' | 'week',
+        if (isEditing) {
+            // Server-side add (Existing logic)
+            if (!product) return
+            startTransition(async () => {
+                const result = await createProductRate({
+                    product_id: product.id,
+                    duration_unit: newRate.duration_unit as 'month' | 'week',
+                    duration_value: parseInt(newRate.duration_value),
+                    interest_rate: parseFloat(newRate.interest_rate)
+                })
+
+                if (result.error) toast.error(result.error)
+                else {
+                    toast.success("Rate added")
+                    router.refresh()
+                }
+            })
+        } else {
+            // Client-side add (Temp logic)
+            const rate = {
+                id: `temp_${Date.now()}`, // Temp ID for list key
+                duration_unit: newRate.duration_unit,
                 duration_value: parseInt(newRate.duration_value),
                 interest_rate: parseFloat(newRate.interest_rate)
-            })
-
-            if (result.error) toast.error(result.error)
-            else {
-                toast.success("Rate added")
-                router.refresh()
             }
-        })
+            setTempRates(prev => [...prev, rate])
+            toast.success("Rate added to list")
+        }
     }
 
     const handleDeleteRate = async (rateId: string) => {
-        startTransition(async () => {
-            const result = await deleteProductRate(rateId)
-            if (result.error) toast.error(result.error)
-            else {
-                toast.success("Rate deleted")
-                router.refresh()
-            }
-        })
+        if (isEditing) {
+            // Server-side delete (Existing logic)
+            startTransition(async () => {
+                const result = await deleteProductRate(rateId)
+                if (result.error) toast.error(result.error)
+                else {
+                    toast.success("Rate deleted")
+                    router.refresh()
+                }
+            })
+        } else {
+            // Client-side delete (Temp logic)
+            setTempRates(prev => prev.filter(r => r.id !== rateId))
+            toast.success("Rate removed")
+        }
     }
+
+    // Combined list of rates to display
+    const ratesToDisplay = isEditing ? (product?.loan_product_rates || []) : tempRates
 
     return (
         <div className="space-y-8">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Basic Details</CardTitle>
+                        <CardTitle>{isEditing ? 'Edit Product' : 'New Product Details'}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-2">
@@ -145,22 +177,10 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
                                 <Label htmlFor="is_active">Active</Label>
                             </div>
                         </div>
-
-                        {!isEditing && (
-                            <Button type="submit" disabled={pending}>
-                                {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create Product"}
-                            </Button>
-                        )}
-                        {isEditing && (
-                            <div className="flex justify-end">
-                                <Button type="submit" disabled={pending}>Save Changes</Button>
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
-            </form>
 
-            {isEditing && (
+                {/* Interest Rates - Now Visible in Both Modes */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Interest Rates & Durations</CardTitle>
@@ -168,16 +188,20 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
                     <CardContent className="space-y-6">
                         {/* List Existing Rates */}
                         <div className="space-y-2">
-                            {product.loan_product_rates?.map((rate: any) => (
-                                <div key={rate.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
-                                    <span className="font-medium">
-                                        {rate.duration_value} {rate.duration_unit}(s) at {rate.interest_rate}% Interest
-                                    </span>
-                                    <Button size="sm" variant="ghost" onClick={() => handleDeleteRate(rate.id)} disabled={pending}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
+                            {ratesToDisplay.length > 0 ? (
+                                ratesToDisplay.map((rate: any) => (
+                                    <div key={rate.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                                        <span className="font-medium">
+                                            {rate.duration_value} {rate.duration_unit}(s) at {rate.interest_rate}% Interest
+                                        </span>
+                                        <Button size="sm" variant="ghost" type="button" onClick={() => handleDeleteRate(rate.id)} disabled={pending}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-sm text-muted-foreground italic">No rates added yet.</div>
+                            )}
                         </div>
 
                         <Separator />
@@ -204,14 +228,26 @@ export function ProductForm({ businessId, product }: { businessId: string, produ
                                 <Label>Interest Rate (%)</Label>
                                 <Input type="number" step="0.1" value={newRate.interest_rate} onChange={(e) => setNewRate({ ...newRate, interest_rate: e.target.value })} disabled={pending} />
                             </div>
-                            <Button onClick={handleAddRate} disabled={pending} variant="outline">
+                            <Button type="button" onClick={handleAddRate} disabled={pending} variant="outline">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Rate
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
-            )}
+
+                {/* Final Submit Button */}
+                <div className="flex justify-end">
+                    {!isEditing && (
+                        <Button type="submit" disabled={pending}>
+                            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create Product"}
+                        </Button>
+                    )}
+                    {isEditing && (
+                        <Button type="submit" disabled={pending}>Save Changes</Button>
+                    )}
+                </div>
+            </form>
         </div>
     )
 }
