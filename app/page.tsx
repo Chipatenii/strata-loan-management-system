@@ -12,16 +12,21 @@ export default function Home() {
           The future of loan management. Fast, secure, and mobile-first.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/login">
-            <Button size="lg" className="w-full sm:w-auto">Sign In</Button>
+          <Link href="/auth/customer/login">
+            <Button size="lg" className="w-full sm:w-auto">Customer Login</Button>
           </Link>
-          <Link href="/register">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto">Create Account</Button>
+          <Link href="/auth/customer/sign-up">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto">Use Invite Code</Button>
           </Link>
         </div>
-        <p className="text-xs text-muted-foreground mt-8">
-          Pilot Access Only. Invite code required.
-        </p>
+        <div className="pt-8">
+          <p className="text-sm text-muted-foreground mb-2">For Lending Businesses</p>
+          <div className="flex gap-4 justify-center text-sm">
+            <Link href="/auth/admin/login" className="hover:text-primary underline">Admin Login</Link>
+            <span className="text-muted-foreground/50">|</span>
+            <Link href="/auth/admin/sign-up" className="hover:text-primary underline">Register Business</Link>
+          </div>
+        </div>
       </div>
     </main>
   )

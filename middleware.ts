@@ -53,6 +53,9 @@ export async function middleware(request: NextRequest) {
         if (path === '/login') {
             return NextResponse.redirect(new URL('/auth/customer/login', request.url))
         }
+        if (path === '/register') {
+            return NextResponse.redirect(new URL('/auth/customer/sign-up', request.url))
+        }
     }
 
     // 2. Authenticated Users

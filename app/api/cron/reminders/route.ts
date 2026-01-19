@@ -55,6 +55,7 @@ export async function GET(request: Request) {
             if (!existing) {
                 await supabase.from('notification_outbox').insert({
                     user_id: loan.user_id,
+                    business_id: loan.business_id, // Ensure business scoping
                     channel: 'sms', // Pilot default
                     recipient: loan.user_id, // Placeholder, would fetch phone
                     subject: 'Loan Due Reminder',
