@@ -2,16 +2,20 @@
 
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export function PaymentForm({ userId, loans }: { userId: string, loans: any[] }) {
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { AlertCircle, Smartphone, Building2 } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export function PaymentForm({ userId, businessId, loans, paymentConfig }: { userId: string, businessId: string, loans: any[], paymentConfig?: any }) {
     const [pending, startTransition] = useTransition()
     const router = useRouter()
     const [loanId, setLoanId] = useState<string>(loans.length > 0 ? loans[0].id : '')
@@ -46,6 +50,7 @@ export function PaymentForm({ userId, loans }: { userId: string, loans: any[] })
                 // Insert Payment
                 const { error } = await supabase.from('payments').insert({
                     user_id: userId,
+                    business_id: businessId,
                     loan_id: loanId,
                     amount: parseFloat(amount),
                     method: method,
@@ -85,6 +90,26 @@ export function PaymentForm({ userId, loans }: { userId: string, loans: any[] })
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
+                    {/* Payment Instructions Alert */}
+                    {method === 'mobile_money' && paymentConfig?.mobile_money_instructions && (
+                        <Alert className="bg-blue-50 border-blue-200">
+                            <Smartphone className="h-4 w-4 text-blue-600" />
+                            <AlertTitle className="text-blue-800">Mobile Money Instructions</AlertTitle>
+                            <AlertDescription className="text-blue-700 whitespace-pre-wrap text-xs mt-1">
+                                {paymentConfig.mobile_money_instructions}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {method === 'bank_transfer' && paymentConfig?.bank_transfer_instructions && (
+                        <Alert className="bg-blue-50 border-blue-200">
+                            <Building2 className="h-4 w-4 text-blue-600" />
+                            <AlertTitle className="text-blue-800">Bank Transfer Instructions</AlertTitle>
+                            <AlertDescription className="text-blue-700 whitespace-pre-wrap text-xs mt-1">
+                                {paymentConfig.bank_transfer_instructions}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="loanId">Select Loan</Label>
                         <Select onValueChange={setLoanId} defaultValue={loanId} disabled={pending}>

@@ -11,6 +11,9 @@ export default async function KycPage() {
     // Check if already submitted
     const { data: kyc } = await supabase.from('kyc_records').select('*').eq('user_id', user.id).single()
 
+    // Get Business ID
+    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
+
     if (kyc && kyc.status !== 'not_submitted' && kyc.status !== 'rejected') {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
@@ -22,7 +25,7 @@ export default async function KycPage() {
 
     return (
         <div className="flex justify-center py-6">
-            <KycForm userId={user.id} />
+            <KycForm userId={user.id} businessId={profile?.business_id} />
         </div>
     )
 }

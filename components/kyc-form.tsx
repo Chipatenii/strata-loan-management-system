@@ -11,7 +11,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export function KycForm({ userId }: { userId: string }) {
+export function KycForm({ userId, businessId }: { userId: string, businessId: string }) {
     const [pending, startTransition] = useTransition()
     const router = useRouter()
     // Files state
@@ -48,6 +48,8 @@ export function KycForm({ userId }: { userId: string }) {
                 // 2. Insert KYC Record
                 const { error } = await supabase.from('kyc_records').insert({
                     user_id: userId,
+                    business_id: businessId,
+                    status: 'pending_review',
                     status: 'pending_review',
                     id_document_url: idPath,
                     proof_of_address_url: proofPath,

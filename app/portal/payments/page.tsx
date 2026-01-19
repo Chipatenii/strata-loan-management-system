@@ -15,9 +15,20 @@ export default async function NewPaymentPage() {
         .eq('user_id', user.id)
         .in('status', ['active', 'defaulted']) // Only pay allowed statuses
 
+    // Get Business Config
+    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
+    const { data: business } = await supabase.from('businesses').select('payment_config').eq('id', profile?.business_id).single()
+
+    const paymentConfig = business?.payment_config || {}
+
     return (
         <div className="flex justify-center py-6">
-            <PaymentForm userId={user.id} loans={loans || []} />
+            <PaymentForm
+                userId={user.id}
+                businessId={profile?.business_id}
+                loans={loans || []}
+                paymentConfig={paymentConfig}
+            />
         </div>
     )
 }

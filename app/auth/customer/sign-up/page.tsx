@@ -13,18 +13,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import Link from "next/link"
-import { useTransition, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { Suspense, useState, useTransition } from "react"
 import { signUpCustomer } from "@/lib/actions/auth"
 import { Loader2 } from "lucide-react"
 
-export default function CustomerRegisterPage() {
+function SignUpForm() {
+    const searchParams = useSearchParams()
+    const codeParam = searchParams.get('code') || ''
+
     const [pending, startTransition] = useTransition()
     const [formData, setFormData] = useState({
         email: '',
         password: '',
         confirmPassword: '',
-        businessCode: ''
+        businessCode: codeParam
     })
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }))
@@ -66,7 +71,7 @@ export default function CustomerRegisterPage() {
                             required
                             value={formData.businessCode}
                             onChange={handleChange}
-                            disabled={pending}
+                            disabled={pending || !!codeParam}
                         />
                     </div>
                     <div className="space-y-2">
@@ -116,5 +121,13 @@ export default function CustomerRegisterPage() {
                 </CardFooter>
             </form>
         </Card>
+    )
+}
+
+export default function CustomerRegisterPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignUpForm />
+        </Suspense>
     )
 }

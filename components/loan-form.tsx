@@ -12,7 +12,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export function LoanApplicationForm({ userId }: { userId: string }) {
+export function LoanApplicationForm({ userId, businessId }: { userId: string, businessId: string }) {
     const [pending, startTransition] = useTransition()
     const router = useRouter()
     const [amount, setAmount] = useState('')
@@ -41,6 +41,7 @@ export function LoanApplicationForm({ userId }: { userId: string }) {
                 // Insert Loan
                 const { error } = await supabase.from('loans').insert({
                     user_id: userId,
+                    business_id: businessId,
                     amount: parseFloat(amount),
                     duration_months: parseInt(duration),
                     interest_rate: 15.0, // Fixed 15% for pilot

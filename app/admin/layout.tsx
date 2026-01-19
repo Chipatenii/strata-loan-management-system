@@ -76,6 +76,14 @@ export default function AdminLayout({
                         <Users className="h-5 w-5" />
                         Customers
                     </Link>
+                    <Link href="/admin/products" className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary">
+                        <Banknote className="h-5 w-5" />
+                        Loan Products
+                    </Link>
+                    <Link href="/admin/settings" className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary">
+                        <ShieldCheck className="h-5 w-5" />
+                        Settings
+                    </Link>
                     <form action={signout} className="mt-auto">
                         <button className="flex items-center gap-3 text-sm font-medium text-red-500 hover:text-red-600">
                             <LogOut className="h-5 w-5" />

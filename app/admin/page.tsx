@@ -1,6 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
+import { Copy, Plus } from "lucide-react"
+import Link from "next/link"
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return <div>Not authenticated</div>
+
+    // Fetch Business Code
+    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
+    const { data: business } = await supabase.from('businesses').select('*').eq('id', profile?.business_id).single()
+
+    // Mock KPIs for now, but Invite Widget is real
+    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/customer/sign-up?code=${business?.code}`
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
@@ -52,21 +68,45 @@ export default function AdminDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Revenue / Interest (Mock)</CardTitle>
+                        <CardTitle>Invite Customers</CardTitle>
+                        <CardDescription>Share this link to onboard new borrowers.</CardDescription>
                     </CardHeader>
-                    <CardContent className="pl-2">
-                        {/* Chart placeholder */}
-                        <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                            Chart goes here
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <div className="grid flex-1 gap-2">
+                                <label htmlFor="link" className="sr-only">Link</label>
+                                <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                                    {inviteLink}
+                                </div>
+                            </div>
+                            {/* In a real client component we'd add copy functionality, simplistic here */}
+                            <Button size="sm" className="px-3">
+                                <span className="sr-only">Copy</span>
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Business Code: <strong className="text-foreground">{business?.code}</strong></span>
                         </div>
                     </CardContent>
                 </Card>
                 <Card className="col-span-3">
                     <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
+                        <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">No recent activity.</p>
+                    <CardContent className="space-y-2">
+                        <Link href="/admin/products">
+                            <Button variant="outline" className="w-full justify-start">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Loan Product
+                            </Button>
+                        </Link>
+                        <Link href="/admin/loans">
+                            <Button variant="outline" className="w-full justify-start">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Review Applications
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
