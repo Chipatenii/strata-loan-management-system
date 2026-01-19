@@ -1,7 +1,4 @@
-
 import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
-import path from 'path'
 
 // Load env from .env.local
 // Hardcoded for script execution context where .env loading is flaky without dotenv package
@@ -82,7 +79,7 @@ async function diagnose() {
         console.log(`Total Memberships: ${members?.length}`)
         members?.forEach(m => {
             const b = businesses?.find(biz => biz.id === m.business_id)
-            console.log(`Admin ${m.users?.email} is in Business: ${b?.name} (${b?.code})`)
+            console.log(`Admin ${(m.users as any)?.email} is in Business: ${b?.name} (${b?.code})`)
         })
     }
 
