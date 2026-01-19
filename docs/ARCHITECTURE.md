@@ -20,7 +20,8 @@ Strata Loan Management System is a **Next.js 14 (App Router)** application deplo
 
 ### 3. Database Layer (Supabase Postgres)
 
-- **RLS**: Row-level security on ALL tables ensures data isolation.
+- **Multi-Tenancy**: Strict isolation via `businesses` and `business_memberships`.
+- **RLS**: Row-level security enforces tenant boundaries (Admin A cannot see Admin B's data).
 - **Triggers**: (Planned) Update timestamps automatically.
 
 ### Data Flow

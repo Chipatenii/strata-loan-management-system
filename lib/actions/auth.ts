@@ -1,13 +1,14 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
-import { loginSchema, registerSchema } from '@/lib/schemas'
+import { loginSchema, adminRegisterSchema, customerRegisterSchema } from '@/lib/schemas'
 
-export async function login(formData: z.infer<typeof loginSchema>) {
+export async function login(formData: z.infer<typeof loginSchema>, userType: 'admin' | 'customer' = 'customer') {
     const supabase = await createClient()
 
     const { error } = await supabase.auth.signInWithPassword(formData)
@@ -16,32 +17,136 @@ export async function login(formData: z.infer<typeof loginSchema>) {
         return { error: error.message }
     }
 
+    // Role check logic could go here, but middleware handles it.
+    // However, if an Admin logs into Customer portal, middleware directs them to Admin?
+    // We'll let middleware handle the routing.
+
     revalidatePath('/', 'layout')
-    redirect('/portal')
+    if (userType === 'admin') {
+        redirect('/admin')
+    } else {
+        redirect('/portal')
+    }
 }
 
-export async function signup(formData: z.infer<typeof registerSchema>) {
+export async function signUpAdmin(formData: z.infer<typeof adminRegisterSchema>) {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    // 1. Verify Invite Code (Pilot Mode)
-    // In a real app, this might check a DB table of codes.
-    // For MVP, checking against an ENV var or hardcoded list.
-    const validCodes = (process.env.PILOT_INVITE_CODES || 'STRATA2025,PILOT2025').split(',')
-
-    if (!validCodes.includes(formData.inviteCode)) {
-        return { error: 'Invalid invite code.' }
-    }
-
-    // 2. Sign up
-    const { error } = await supabase.auth.signUp({
+    // 1. Sign up in Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        // Note: We can add metadata like full_name here if we collected it, 
-        // but the users table trigger or subsequent profile update handles it.
+        options: {
+            data: {
+                role: 'admin',
+                full_name: 'Admin', // Placeholder
+            }
+        }
     })
 
-    if (error) {
-        return { error: error.message }
+    if (authError || !authData.user) {
+        return { error: authError?.message || 'Signup failed' }
+    }
+
+    const userId = authData.user.id
+
+    // 2. Create Business
+    // Generate simple 6-char code
+    const code = 'BIZ' + Math.floor(100000 + Math.random() * 900000).toString()
+
+    const { data: businessData, error: businessError } = await adminSupabase
+        .from('businesses')
+        .insert({
+            name: formData.businessName,
+            code: code,
+        })
+        .select()
+        .single()
+
+    if (businessError) {
+        // Cleanup auth user? ideally yes, but for MVP just fail.
+        return { error: 'Failed to create business: ' + businessError.message }
+    }
+
+    // 3. Create Public User Profile
+    const { error: userError } = await adminSupabase
+        .from('users')
+        .insert({
+            id: userId,
+            email: formData.email,
+            role: 'admin', // Legacy role field
+            business_id: businessData.id,
+            full_name: 'Admin', // Placeholder
+        })
+
+    if (userError) {
+        return { error: 'Failed to create user profile: ' + userError.message }
+    }
+
+    // 4. Create Membership
+    const { error: memberError } = await adminSupabase
+        .from('business_memberships')
+        .insert({
+            user_id: userId,
+            business_id: businessData.id,
+            role: 'admin',
+        })
+
+    if (memberError) {
+        return { error: 'Failed to create membership: ' + memberError.message }
+    }
+
+    revalidatePath('/', 'layout')
+    redirect('/admin')
+}
+
+export async function signUpCustomer(formData: z.infer<typeof customerRegisterSchema>) {
+    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
+
+    // 1. Validate Business Code
+    const { data: businessData, error: businessError } = await adminSupabase
+        .from('businesses')
+        .select('id')
+        .eq('code', formData.businessCode)
+        .single()
+
+    if (businessError || !businessData) {
+        return { error: 'Invalid Business Code.' }
+    }
+
+    // 2. Sign up Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+            data: {
+                role: 'customer',
+                full_name: 'Customer', // Placeholder
+            }
+        }
+    })
+
+    if (authError || !authData.user) {
+        return { error: authError?.message || 'Signup failed' }
+    }
+
+    const userId = authData.user.id
+
+    // 3. Create Public User Profile
+    const { error: userError } = await adminSupabase
+        .from('users')
+        .insert({
+            id: userId,
+            email: formData.email,
+            role: 'customer',
+            business_id: businessData.id,
+            full_name: 'Customer', // Placeholder
+        })
+
+    if (userError) {
+        return { error: 'Failed to create user profile: ' + userError.message }
     }
 
     revalidatePath('/', 'layout')
@@ -52,5 +157,5 @@ export async function signout() {
     const supabase = await createClient()
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
-    redirect('/login')
+    redirect('/auth/customer/login') // Default redirect
 }

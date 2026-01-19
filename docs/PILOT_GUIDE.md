@@ -6,9 +6,10 @@ Strata LMS is currently in **INVITE-ONLY Pilot Mode**.
 
 ### 1. Registration
 
-- Access is restricted via Invite Codes.
-- Current VALID Codes: `STRATA2025`, `PILOT2025`.
-- New users must enter a valid code during registration.
+- **Admins**: Sign up via `/auth/admin/sign-up` to create a Business.
+- **Customers**: Sign up via `/auth/customer/sign-up`.
+  - REQUIRES a **Business Invite Code** provided by the Admin.
+  - Example Code: `BIZ123456`.
 
 ### 2. Manual Workflow
 

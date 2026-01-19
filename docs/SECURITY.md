@@ -8,13 +8,15 @@
   - `users` table has `role` enum ('customer', 'admin').
   - RLS policies restrict access to 'admin' role for sensitive data.
 
-## 2. Row Level Security (RLS)
+## 2. Row Level Security (RLS) & Multi-Tenancy
 
-Every table has RLS enabled.
+Every table has RLS enabled with strict Tenant Isolation.
 
+- **Data Hierarchy**: All entities (`loans`, `users`) are scoped to a `business_id`.
 - **Customers**: Can only `SELECT` their own data (`user_id = auth.uid()`).
-- **Customers**: Can only `INSERT` their own data.
-- **Admins**: Can `SELECT` and `UPDATE` all data (Policy: `exists (select 1 from users where id = auth.uid() and role = 'admin')`).
+- **Admins**: Can only Access data belonging to their **Business Membership**.
+  - Policy: `exists (select 1 from business_memberships where user_id = auth.uid() and role = 'admin' and business_id = target.business_id)`
+- **Cross-Tenant Prevention**: An Admin of Business A cannot access data of Business B.
 
 ## 3. Storage Security
 

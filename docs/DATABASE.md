@@ -6,10 +6,20 @@ PostgreSQL hosted on Supabase.
 
 ## Tables
 
+### `businesses`
+
+- Accounts/Tenants.
+- Columns: `id`, `name`, `code` (invite code).
+
+### `business_memberships`
+
+- Admin/Staff access control.
+- Columns: `user_id`, `business_id`, `role`.
+
 ### `users`
 
 - Stores profile information linked to `auth.users`.
-- Columns: `id` (PK, FK), `email`, `role`, `full_name`.
+- Columns: `id` (PK, FK), `email`, `role` (legacy), `full_name`, `business_id`.
 
 ### `kyc_records`
 
