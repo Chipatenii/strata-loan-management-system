@@ -5,24 +5,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
-// Schemas
-export const loginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-})
-
-export const registerSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-    confirmPassword: z.string().min(6),
-    inviteCode: z.string().min(1, 'Invite code is required'),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-})
+import { loginSchema, registerSchema } from '@/lib/schemas'
 
 export async function login(formData: z.infer<typeof loginSchema>) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { error } = await supabase.auth.signInWithPassword(formData)
 
@@ -35,7 +21,7 @@ export async function login(formData: z.infer<typeof loginSchema>) {
 }
 
 export async function signup(formData: z.infer<typeof registerSchema>) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // 1. Verify Invite Code (Pilot Mode)
     // In a real app, this might check a DB table of codes.
@@ -63,7 +49,7 @@ export async function signup(formData: z.infer<typeof registerSchema>) {
 }
 
 export async function signout() {
-    const supabase = createClient()
+    const supabase = await createClient()
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
     redirect('/login')

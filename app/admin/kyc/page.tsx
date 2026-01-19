@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { KycReviewActions } from "@/components/admin/kyc-actions"
 
 export default async function KycQueuePage() {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Fetch pending KYC
     // We need to join with users to get names.

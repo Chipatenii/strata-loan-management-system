@@ -10,7 +10,7 @@ import {
 import { LoanReviewActions } from "@/components/admin/loan-actions"
 
 export default async function LoanQueuePage() {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data: loans } = await supabase
         .from('loans')

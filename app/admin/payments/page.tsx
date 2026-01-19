@@ -10,7 +10,7 @@ import {
 import { PaymentReviewActions } from "@/components/admin/payment-actions"
 
 export default async function PaymentQueuePage() {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data: payments } = await supabase
         .from('payments')

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 export async function approveKyc(recordId: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify Admin (Optional double check, RLS handles it mostly but good for actions)
     const { data: { user } } = await supabase.auth.getUser()
@@ -27,7 +27,7 @@ export async function approveKyc(recordId: string) {
 }
 
 export async function rejectKyc(recordId: string, reason: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
@@ -48,7 +48,7 @@ export async function rejectKyc(recordId: string, reason: string) {
 }
 
 export async function approveLoan(loanId: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
@@ -86,7 +86,7 @@ export async function approveLoan(loanId: string) {
 }
 
 export async function rejectLoan(loanId: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { error } = await supabase.from('loans').update({ status: 'rejected' }).eq('id', loanId)
     if (error) return { error: error.message }
     revalidatePath('/admin/loans')
@@ -94,7 +94,7 @@ export async function rejectLoan(loanId: string) {
 }
 
 export async function reconcilePayment(paymentId: string, action: 'approve' | 'reject') {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (action === 'reject') {
