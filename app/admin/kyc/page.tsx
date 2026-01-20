@@ -16,10 +16,22 @@ import { User, Calendar, Shield, FileText, ExternalLink } from "lucide-react"
 export default async function KycQueuePage() {
     const supabase = await createClient()
 
+    // Get current user's business_id for scoping
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return <div>Not authenticated</div>
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('business_id')
+        .eq('id', user.id)
+        .single()
+
+    // Fetch KYC records scoped to this business
     const { data: records } = await supabase
         .from('kyc_records')
-        .select('*, users(full_name, email)')
+        .select('*, users!inner(full_name, email, business_id)')
         .eq('status', 'pending_review')
+        .eq('users.business_id', profile?.business_id)
         .order('created_at', { ascending: true })
 
     const renderKycCards = () => {

@@ -17,9 +17,21 @@ import Link from "next/link"
 export default async function LoanQueuePage() {
     const supabase = await createClient()
 
+    // Get current user's business_id for scoping
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return <div>Not authenticated</div>
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('business_id')
+        .eq('id', user.id)
+        .single()
+
+    // Fetch loans scoped to this business
     const { data: loans } = await supabase
         .from('loans')
         .select('*, users(full_name, email)')
+        .eq('business_id', profile?.business_id)
         .in('status', ['pending', 'submitted', 'under_review'])
         .order('created_at', { ascending: true })
 
