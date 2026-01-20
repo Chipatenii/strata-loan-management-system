@@ -109,7 +109,7 @@ export default async function AdminDashboard() {
                 {/* Use new InviteCard component */}
                 <InviteCard inviteLink={inviteLink} businessCode={business?.code || ''} />
 
-                <Card className="col-span-3">
+                <Card className="col-span-full md:col-span-2 lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>

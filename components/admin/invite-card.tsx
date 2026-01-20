@@ -29,7 +29,7 @@ export function InviteCard({ inviteLink, businessCode }: InviteCardProps) {
     }
 
     return (
-        <Card className="col-span-4">
+        <Card className="col-span-full md:col-span-2 lg:col-span-4">
             <CardHeader>
                 <CardTitle>Invite Customers</CardTitle>
                 <CardDescription>Share this link to onboard new borrowers.</CardDescription>
