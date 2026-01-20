@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
+import { User, Mail, Phone, Calendar, Shield } from "lucide-react"
 
 export default async function CustomersPage() {
     const supabase = await createClient()
@@ -35,13 +36,72 @@ export default async function CustomersPage() {
         .eq('role', 'customer')
         .order('created_at', { ascending: false })
 
+    const renderCustomerCards = () => {
+        if (!customers || customers.length === 0) {
+            return (
+                <div className="text-center py-12 text-muted-foreground">
+                    <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No customers found.</p>
+                    <p className="text-xs mt-1">Share your invite link to onboard borrowers.</p>
+                </div>
+            )
+        }
+
+        return customers.map((customer) => {
+            const kycStatus = customer.kyc_records?.[0]?.status || 'not_submitted'
+            return (
+                <Card key={customer.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                    <span className="font-semibold truncate">{customer.full_name || 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>Joined {format(new Date(customer.created_at), 'MMM d, yyyy')}</span>
+                                </div>
+                            </div>
+                            <Badge variant={
+                                kycStatus === 'approved' ? 'default' :
+                                    kycStatus === 'pending_review' ? 'secondary' :
+                                        'outline'
+                            } className="flex-shrink-0 capitalize">
+                                {kycStatus.replace('_', ' ')}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 pt-0">
+                        <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{customer.email}</span>
+                        </div>
+                        {customer.phone_number && (
+                            <div className="flex items-center gap-2 text-sm">
+                                <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                <span>{customer.phone_number}</span>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )
+        })
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
             </div>
 
-            <Card>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {renderCustomerCards()}
+            </div>
+
+            {/* Desktop Table View */}
+            <Card className="hidden md:block">
                 <CardHeader>
                     <CardTitle>Registered Customers</CardTitle>
                     <CardDescription>
@@ -81,7 +141,7 @@ export default async function CustomersPage() {
                                                     kycStatus === 'approved' ? 'default' :
                                                         kycStatus === 'pending_review' ? 'secondary' :
                                                             'outline'
-                                                }>
+                                                } className="capitalize">
                                                     {kycStatus.replace('_', ' ')}
                                                 </Badge>
                                             </TableCell>
