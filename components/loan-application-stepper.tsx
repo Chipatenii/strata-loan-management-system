@@ -1,5 +1,7 @@
 'use client'
 
+import { LOAN_STATUS } from "@/lib/constants"
+
 import { useState, useTransition, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -90,7 +92,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                     purpose: purpose,
                     collateral_description: collateralDesc,
                     collateral_image_url: collateralPath,
-                    status: 'pending'
+                    status: LOAN_STATUS.SUBMITTED
                 })
 
                 if (error) throw error

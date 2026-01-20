@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Copy, Plus, FileText, Banknote, BarChart3 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
+import { LOAN_STATUS, KYC_STATUS } from "@/lib/constants"
 
 export default async function AdminDashboard() {
     const supabase = await createClient()
@@ -27,7 +28,7 @@ export default async function AdminDashboard() {
         .from('loans')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', business.id)
-        .eq('status', 'pending')
+        .in('status', [LOAN_STATUS.PENDING, LOAN_STATUS.SUBMITTED, LOAN_STATUS.UNDER_REVIEW])
 
     // 2. Pending KYC
     // We need to filter KYC by users belonging to this business. 
@@ -36,7 +37,7 @@ export default async function AdminDashboard() {
     const { count: pendingKyc } = await supabase
         .from('kyc_records')
         .select('*, users!inner(business_id)', { count: 'exact', head: true })
-        .eq('status', 'pending_review')
+        .eq('status', KYC_STATUS.PENDING_REVIEW)
         .eq('users.business_id', business.id)
 
     // 3. Total Disbursed (Active + Closed + Defaulted)
