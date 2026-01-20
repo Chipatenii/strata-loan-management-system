@@ -17,9 +17,28 @@ export async function login(formData: z.infer<typeof loginSchema>, userType: 'ad
         return { error: error.message }
     }
 
-    // Role check logic could go here, but middleware handles it.
-    // However, if an Admin logs into Customer portal, middleware directs them to Admin?
-    // We'll let middleware handle the routing.
+    // Get user and validate role matches portal
+    const { data: { user } } = await supabase.auth.getUser()
+    const userRole = user?.user_metadata?.role
+
+    // Validate role matches expected portal
+    if (userType === 'customer' && userRole === 'admin') {
+        // Admin trying to access customer portal
+        await supabase.auth.signOut() // Sign them out immediately
+        return {
+            error: 'This is a business account. Please use the Business Portal to log in.',
+            redirectTo: '/auth/admin/login'
+        }
+    }
+
+    if (userType === 'admin' && userRole !== 'admin') {
+        // Customer trying to access admin portal
+        await supabase.auth.signOut() // Sign them out immediately
+        return {
+            error: 'This is a customer account. Please use the Customer Portal to log in.',
+            redirectTo: '/auth/customer/login'
+        }
+    }
 
     revalidatePath('/', 'layout')
     if (userType === 'admin') {
