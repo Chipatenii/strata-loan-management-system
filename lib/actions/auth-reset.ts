@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
+import { getAppOrigin } from "@/lib/config/app"
 
 // Schemas for validation
 const forgotPasswordSchema = z.object({
@@ -24,9 +25,8 @@ export async function forgotPassword(
 ) {
     const supabase = await createClient()
 
-    // Base URL Logic: Prioritize configured ENV, else Vercel, else Localhost
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000')
+    // Use centralized app origin
+    const baseUrl = getAppOrigin()
 
     // Construct the Redirect URL
     // When the user clicks the email link, they go to:
