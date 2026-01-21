@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { updatePaymentConfig } from "@/lib/actions/business"
+import { Badge } from "@/components/ui/badge"
+import { Building2, Mail, Phone, MapPin, FileText, Settings } from "lucide-react"
+import { BusinessProfileForm } from "./business-profile-form"
 import { PaymentSettingsForm } from "./form"
 
 export default async function SettingsPage() {
@@ -12,23 +11,80 @@ export default async function SettingsPage() {
 
     if (!user) return <div>Not authenticated</div>
 
-    // Fetch Business Payment Config
-    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
-    const { data: business } = await supabase.from('businesses').select('id, payment_config').eq('id', profile?.business_id).single()
+    // Fetch user profile and business
+    const { data: profile } = await supabase
+        .from('users')
+        .select('business_id, role')
+        .eq('id', user.id)
+        .single()
+
+    const { data: business } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', profile?.business_id)
+        .single()
+
+    // Check if user has permission to edit
+    const { data: membership } = await supabase
+        .from('business_memberships')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('business_id', profile?.business_id)
+        .single()
+
+    const canEdit = membership?.role === 'admin' || membership?.role === 'owner'
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight">Business Settings</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Manage your business profile and configuration
+                </p>
+            </div>
 
+            {/* Business Profile */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Payment Instructions</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Business Profile
+                    </CardTitle>
                     <CardDescription>
-                        Configure how customers should pay you. These instructions will be shown when they make a payment.
+                        {canEdit
+                            ? "Manage your business information and branding"
+                            : "View your business information (read-only)"
+                        }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <PaymentSettingsForm businessId={business?.id} initialConfig={business?.payment_config || {}} />
+                    {business ? (
+                        <BusinessProfileForm
+                            business={business}
+                            canEdit={canEdit}
+                        />
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No business found</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Payment Instructions */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Payment Instructions
+                    </CardTitle>
+                    <CardDescription>
+                        Configure how customers should pay you
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <PaymentSettingsForm
+                        businessId={business?.id}
+                        initialConfig={business?.payment_config || {}}
+                    />
                 </CardContent>
             </Card>
         </div>
