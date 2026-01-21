@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
+import { StatusBadge } from "@/components/ui/status-badge"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -44,9 +44,7 @@ export default async function LoansListPage() {
                             <CardTitle className="text-base font-medium">
                                 Loan #{loan.id.slice(0, 8)}
                             </CardTitle>
-                            <Badge variant={loan.status === 'active' ? 'default' : 'secondary'}>
-                                {loan.status}
-                            </Badge>
+                            <StatusBadge status={loan.status} />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{formatCurrency(loan.amount)}</div>

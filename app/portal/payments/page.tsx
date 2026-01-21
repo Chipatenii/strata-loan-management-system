@@ -1,6 +1,8 @@
 import { PaymentForm } from "@/components/payment-form"
 import { createClient } from "@/lib/supabase"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { redirect } from "next/navigation"
+import { CreditCard, AlertCircle } from "lucide-react"
 
 export default async function NewPaymentPage() {
     const supabase = await createClient()
@@ -22,13 +24,47 @@ export default async function NewPaymentPage() {
     const paymentConfig = business?.payment_config || {}
 
     return (
-        <div className="flex justify-center py-6">
-            <PaymentForm
-                userId={user.id}
-                businessId={profile?.business_id}
-                loans={loans || []}
-                paymentConfig={paymentConfig}
-            />
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <CreditCard className="h-6 w-6" />
+                    Make a Payment
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Submit payment for your active loan
+                </p>
+            </div>
+
+            {/* Payment Form */}
+            {loans && loans.length > 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Payment Details</CardTitle>
+                        <CardDescription>
+                            Select your loan and provide payment information
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <PaymentForm
+                            userId={user.id}
+                            businessId={profile?.business_id}
+                            loans={loans || []}
+                            paymentConfig={paymentConfig}
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="py-12 text-center">
+                        <AlertCircle className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                        <p className="text-muted-foreground mb-2">No active loans found</p>
+                        <p className="text-sm text-muted-foreground">
+                            You need an active loan to make a payment
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }
