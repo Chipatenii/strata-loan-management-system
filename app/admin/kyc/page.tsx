@@ -27,12 +27,20 @@ export default async function KycQueuePage() {
         .single()
 
     // Fetch KYC records scoped to this business
-    const { data: records } = await supabase
+    // Use !kyc_records_user_id_fkey to specify which foreign key relationship to use
+    const { data: records, error: recordsError } = await supabase
         .from('kyc_records')
-        .select('*, users!inner(full_name, email, business_id)')
+        .select('*, users!kyc_records_user_id_fkey(full_name, email, business_id)')
         .eq('status', 'pending_review')
         .eq('users.business_id', profile?.business_id)
         .order('created_at', { ascending: true })
+
+    // Log errors for debugging
+    if (recordsError) {
+        console.error('KYC Records Error:', recordsError)
+    }
+    console.log('KYC Records Count:', records?.length || 0)
+    console.log('Business ID:', profile?.business_id)
 
     const renderKycCards = () => {
         if (!records || records.length === 0) {
@@ -123,13 +131,20 @@ export default async function KycQueuePage() {
                 <h1 className="text-2xl font-bold tracking-tight">KYC Review Queue</h1>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            {recordsError && (
+                <div className="p-4 bg-destructive/10 text-destructive rounded-md">
+                    <p className="font-semibold">Error loading KYC records:</p>
+                    <p className="text-sm">{recordsError.message}</p>
+                </div>
+            )}
+
+            {/* Stacked Card View */}
+            <div className="space-y-3">
                 {renderKycCards()}
             </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border bg-white">
+            {/* Table View */}
+            <div className="rounded-md border bg-white">
                 <Table>
                     <TableHeader>
                         <TableRow>

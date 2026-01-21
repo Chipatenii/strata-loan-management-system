@@ -28,12 +28,20 @@ export default async function LoanQueuePage() {
         .single()
 
     // Fetch loans scoped to this business
-    const { data: loans } = await supabase
+    // Use !loans_user_id_fkey to specify which foreign key relationship to use
+    const { data: loans, error: loansError } = await supabase
         .from('loans')
-        .select('*, users(full_name, email)')
+        .select('*, users!loans_user_id_fkey(full_name, email)')
         .eq('business_id', profile?.business_id)
         .in('status', ['pending', 'submitted', 'under_review'])
         .order('created_at', { ascending: true })
+
+    // Log errors for debugging
+    if (loansError) {
+        console.error('Loans Error:', loansError)
+    }
+    console.log('Loans Count:', loans?.length || 0)
+    console.log('Business ID:', profile?.business_id)
 
     const renderLoanCards = () => {
         if (!loans || loans.length === 0) {
@@ -115,13 +123,20 @@ export default async function LoanQueuePage() {
         <div className="space-y-4 md:space-y-6">
             <h1 className="text-2xl font-bold tracking-tight">Loan Applications Queue</h1>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            {loansError && (
+                <div className="p-4 bg-destructive/10 text-destructive rounded-md">
+                    <p className="font-semibold">Error loading loan applications:</p>
+                    <p className="text-sm">{loansError.message}</p>
+                </div>
+            )}
+
+            {/* Stacked Card View */}
+            <div className="space-y-3">
                 {renderLoanCards()}
             </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border bg-white">
+            {/* Table View */}
+            <div className="rounded-md border bg-white">
                 <Table>
                     <TableHeader>
                         <TableRow>

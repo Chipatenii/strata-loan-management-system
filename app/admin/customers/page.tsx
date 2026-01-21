@@ -22,7 +22,8 @@ export default async function CustomersPage() {
     const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
 
     // Fetch Customers
-    const { data: customers } = await supabase
+    // Use !kyc_records_user_id_fkey to specify which foreign key relationship to use
+    const { data: customers, error: customersError } = await supabase
         .from('users')
         .select(`
             id,
@@ -30,11 +31,18 @@ export default async function CustomersPage() {
             full_name,
             phone_number,
             created_at,
-            kyc_records (status)
+            kyc_records!kyc_records_user_id_fkey(status)
         `)
         .eq('business_id', profile?.business_id)
         .eq('role', 'customer')
         .order('created_at', { ascending: false })
+
+    // Log errors for debugging
+    if (customersError) {
+        console.error('Customers Error:', customersError)
+    }
+    console.log('Customers Count:', customers?.length || 0)
+    console.log('Business ID:', profile?.business_id)
 
     const renderCustomerCards = () => {
         if (!customers || customers.length === 0) {
@@ -95,13 +103,20 @@ export default async function CustomersPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            {customersError && (
+                <div className="p-4 bg-destructive/10 text-destructive rounded-md">
+                    <p className="font-semibold">Error loading customers:</p>
+                    <p className="text-sm">{customersError.message}</p>
+                </div>
+            )}
+
+            {/* Stacked Card View */}
+            <div className="space-y-3">
                 {renderCustomerCards()}
             </div>
 
-            {/* Desktop Table View */}
-            <Card className="hidden md:block">
+            {/* Table View */}
+            <Card>
                 <CardHeader>
                     <CardTitle>Registered Customers</CardTitle>
                     <CardDescription>

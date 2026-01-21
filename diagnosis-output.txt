@@ -1,0 +1,24 @@
+=== BUSINESS DATA VISIBILITY DIAGNOSTIC ===
+
+📊 Total Businesses: 1
+  - Alfman Money Lenders (BIZ117927)
+    ID: c2cc27e8-b65d-47a9-a9dc-8b4d902da916
+    Created: 2026-01-20T11:07:19.573273+00:00
+    Payment Config: {}
+
+
+📋 Business: Alfman Money Lenders (BIZ117927)
+────────────────────────────────────────────────────────────
+  👥 Memberships: 1
+    - innocentmanda70@gmail.com (admin)
+  👤 Customers: 1
+    - ostentomediaagency@gmail.com (Innocent Manda)
+  📄 KYC Records: 1
+    - pending_review: 1
+  💰 Loans: 1
+    - submitted: 1
+  📦 Loan Products: 1
+    - Pay Day Loan (Active)
+
+============================================================
+✅ Diagnostic Complete

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Plus, FileText, Banknote, BarChart3 } from "lucide-react"
+import { Plus, FileText, Banknote, BarChart3, TrendingUp, Shield, Clock, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
 import { LOAN_STATUS, KYC_STATUS } from "@/lib/constants"
@@ -63,46 +63,89 @@ export default async function AdminDashboard() {
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Total Disbursed
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(totalDisbursed)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Pending KYC
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pendingKyc || 0}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Pending Loans
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pendingLoans || 0}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Outstanding Balance
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(totalOutstanding)}</div>
-                    </CardContent>
-                </Card>
+                {/* Total Disbursed - Success metric */}
+                <Link href="/admin/reports" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Total Disbursed
+                            </CardTitle>
+                            <div className="rounded-full bg-green-500/10 p-2 group-hover:bg-green-500/20 transition-colors">
+                                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{formatCurrency(totalDisbursed)}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                View detailed reports →
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                {/* Pending KYC - Requires attention */}
+                <Link href="/admin/kyc" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Pending KYC
+                            </CardTitle>
+                            <div className="rounded-full bg-amber-500/10 p-2 group-hover:bg-amber-500/20 transition-colors">
+                                <Shield className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{pendingKyc || 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {pendingKyc > 0 ? 'Review applications →' : 'No pending reviews'}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                {/* Pending Loans - Requires attention */}
+                <Link href="/admin/loans" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Pending Loans
+                            </CardTitle>
+                            <div className="rounded-full bg-amber-500/10 p-2 group-hover:bg-amber-500/20 transition-colors">
+                                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{pendingLoans || 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {pendingLoans > 0 ? 'Review applications →' : 'No pending reviews'}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                {/* Outstanding Balance - Warning metric */}
+                <Link href="/admin/reports" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Outstanding Balance
+                            </CardTitle>
+                            <div className="rounded-full bg-red-500/10 p-2 group-hover:bg-red-500/20 transition-colors">
+                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{formatCurrency(totalOutstanding)}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Active portfolio balance
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
