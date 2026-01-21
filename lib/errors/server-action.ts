@@ -49,7 +49,12 @@ export function withServerAction<TArgs extends any[], TReturn>(
                 requestId
             }
 
-        } catch (err) {
+        } catch (err: any) {
+            // Re-throw Next.js Redirect errors
+            if (err?.digest?.startsWith?.('NEXT_REDIRECT')) {
+                throw err
+            }
+
             // Normalize and log the error
             const appError = normalizeUnknownError(err, location, requestId)
             logError(appError)
@@ -87,10 +92,17 @@ export function withServerActionThrows<TArgs extends any[], TReturn>(
             const data = await action(requestId, ...args)
             return { data, requestId }
 
-        } catch (err) {
+        } catch (err: any) {
+            // Re-throw Next.js Redirect errors
+            if (err?.digest?.startsWith?.('NEXT_REDIRECT')) {
+                throw err
+            }
+
+            // Normalize and log the error
             const appError = normalizeUnknownError(err, location, requestId)
             logError(appError)
 
+            // Return user-safe error message
             return {
                 error: appError.message,
                 requestId
