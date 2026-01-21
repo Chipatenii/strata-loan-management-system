@@ -54,13 +54,22 @@ export async function getBusinessReports(
 
         if (payError) throw payError
 
+        // Completed Loans (closed normally)
+        const { count: completedLoansCount } = await supabase
+            .from('loans')
+            .select('*', { count: 'exact', head: true })
+            .eq('business_id', businessId)
+            .eq('status', 'closed')
+            .gte('created_at', dateRange.from.toISOString())
+            .lte('created_at', dateRange.to.toISOString())
+
         // 3. Fetch Portfolio State (All Active Loans)
         const { data: activeLoans, error: activeError } = await supabase
             .from('loans')
             .select('id, amount, applied_rate, duration_months, created_at, status, payments(amount, status)')
             .eq('business_id', businessId)
             .neq('status', 'rejected')
-            .neq('status', 'completed') // Assuming 'completed' means fully paid. 'active' and 'pending' ???
+            .neq('status', 'closed') // Exclude fully closed/paid loans
 
         if (activeError) throw activeError
 
