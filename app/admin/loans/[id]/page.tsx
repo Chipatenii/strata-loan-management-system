@@ -8,9 +8,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink } from "lucide-react"
 
-export default async function AdminLoanDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminLoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
-    const { id } = params
+    const { id } = await params
 
     // Get current user and business_id
     const { data: { user } } = await supabase.auth.getUser()

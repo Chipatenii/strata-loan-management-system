@@ -35,12 +35,7 @@ export default async function KycQueuePage() {
         .eq('users.business_id', profile?.business_id)
         .order('created_at', { ascending: true })
 
-    // Log errors for debugging
-    if (recordsError) {
-        console.error('KYC Records Error:', recordsError)
-    }
-    console.log('KYC Records Count:', records?.length || 0)
-    console.log('Business ID:', profile?.business_id)
+
 
     const renderKycCards = () => {
         if (!records || records.length === 0) {

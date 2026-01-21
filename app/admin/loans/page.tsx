@@ -36,12 +36,7 @@ export default async function LoanQueuePage() {
         .in('status', ['pending', 'submitted', 'under_review'])
         .order('created_at', { ascending: true })
 
-    // Log errors for debugging
-    if (loansError) {
-        console.error('Loans Error:', loansError)
-    }
-    console.log('Loans Count:', loans?.length || 0)
-    console.log('Business ID:', profile?.business_id)
+
 
     const renderLoanCards = () => {
         if (!loans || loans.length === 0) {

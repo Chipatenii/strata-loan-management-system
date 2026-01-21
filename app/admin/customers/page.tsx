@@ -29,7 +29,7 @@ export default async function CustomersPage() {
             id,
             email,
             full_name,
-            phone_number,
+            phone,
             created_at,
             kyc_records!kyc_records_user_id_fkey(status)
         `)
@@ -37,12 +37,7 @@ export default async function CustomersPage() {
         .eq('role', 'customer')
         .order('created_at', { ascending: false })
 
-    // Log errors for debugging
-    if (customersError) {
-        console.error('Customers Error:', customersError)
-    }
-    console.log('Customers Count:', customers?.length || 0)
-    console.log('Business ID:', profile?.business_id)
+
 
     const renderCustomerCards = () => {
         if (!customers || customers.length === 0) {
@@ -85,12 +80,10 @@ export default async function CustomersPage() {
                             <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                             <span className="truncate">{customer.email}</span>
                         </div>
-                        {customer.phone_number && (
-                            <div className="flex items-center gap-2 text-sm">
-                                <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                                <span>{customer.phone_number}</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span>{customer.phone || 'N/A'}</span>
+                        </div>
                     </CardContent>
                 </Card>
             )
@@ -148,7 +141,7 @@ export default async function CustomersPage() {
                                             <TableCell>
                                                 <div className="flex flex-col text-sm">
                                                     <span>{customer.email}</span>
-                                                    <span className="text-muted-foreground text-xs">{customer.phone_number}</span>
+                                                    <span className="text-muted-foreground text-xs">{customer.phone || 'N/A'}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

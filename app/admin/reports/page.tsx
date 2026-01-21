@@ -35,23 +35,20 @@ export default function ReportsPage() {
             const sb = createBrowserSupabaseClient()
             const { data: { user }, error: authError } = await sb.auth.getUser()
             if (authError) {
-                console.error('Auth Error:', authError)
+                // Handle error
                 return
             }
             if (user) {
                 const { data: profile, error: profileError } = await sb.from('users').select('business_id').eq('id', user.id).single()
                 if (profileError) {
-                    console.error('Profile Error:', profileError)
+                    // Handle error
                     return
                 }
                 const { data: business, error: businessError } = await sb.from('businesses').select('name').eq('id', profile?.business_id).single()
-                if (businessError) {
-                    console.error('Business Error:', businessError)
-                }
+
                 if (profile?.business_id) {
                     setBusinessId(profile.business_id)
                     setBusinessName(business?.name || 'My Business')
-                    console.log('Business ID loaded:', profile.business_id)
                 }
             }
         }
@@ -63,13 +60,10 @@ export default function ReportsPage() {
         if (!businessId) return
 
         startTransition(async () => {
-            console.log('Fetching reports for business:', businessId)
             const result = await getBusinessReports(businessId, dateRange)
             if (result.data) {
                 setMetrics(result.data)
-                console.log('Reports loaded successfully')
             } else if (result.error) {
-                console.error('Reports Error:', result.error)
                 toast.error(`Failed to load reports: ${result.error}`)
             }
         })
@@ -228,7 +222,7 @@ export default function ReportsPage() {
                     <CardDescription>Visualizing disbursement vs collection over the selected period.</CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                    <div className="h-[350px] w-full">
+                    <div className="h-[350px] w-full min-h-[350px]">
                         {metrics && (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={metrics.chart_data}>
