@@ -10,12 +10,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { showErrorToast, showSuccessToast } from "@/lib/errors"
 import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Building2, UploadCloud, X } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
+import { submitLoanApplication } from "@/lib/actions/loans"
 
 type Product = {
     id: string
@@ -44,7 +43,6 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
     products: Product[],
     kycStatus: string
 }) {
-    const router = useRouter()
     const [pending, startTransition] = useTransition()
     const [step, setStep] = useState(1)
 
@@ -67,7 +65,6 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
     const [accountNumber, setAccountNumber] = useState('')
 
     // Derived Data
-    // Derived Data
     const selectedProduct = useMemo(() => products.find(p => p.id === selectedProductId), [products, selectedProductId])
     const selectedRate = useMemo(() => selectedProduct?.loan_product_rates.find(r => r.id === selectedRateId), [selectedProduct, selectedRateId])
 
@@ -75,11 +72,6 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
     const repaymentPreview = useMemo(() => {
         if (!amount || !selectedRate) return null
         const principal = parseFloat(amount)
-        // Normalize duration to months for interest calc (MVP assumption: rates are monthly or convert accordingly)
-        // If week, we treat as fraction of month or just use raw depending on rate definition.
-        // Prompt said "duration_months (1-6)". If rate is weekly, we might need adjustments.
-        // Assuming simple interest formula takes 'duration' in same unit as rate.
-        // Let's assume rate is monthly. duration_value is months.
         const duration = selectedRate.duration_unit === 'month' ? selectedRate.duration_value : selectedRate.duration_value / 4
 
         return calculateSimpleInterest(principal, selectedRate.interest_rate, duration)
@@ -98,88 +90,59 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
         setCollateralFiles(prev => prev.filter((_, i) => i !== index))
     }
 
+    /**
+     * Convert File to base64 for server action
+     */
+    const fileToBase64 = (file: File): Promise<{ name: string; type: string; base64: string }> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1]
+                resolve({
+                    name: file.name,
+                    type: file.type,
+                    base64
+                })
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
+    }
+
     const handleSubmit = async () => {
         if (!selectedProduct || !selectedRate || !repaymentPreview) return
 
         startTransition(async () => {
             try {
-                const supabase = createBrowserSupabaseClient()
-
-                // 1. Upload Collateral Images (Parallel)
-                const uploadedImages: { path: string, desc: string }[] = []
+                // Convert collateral images to base64
+                let collateralImages: Array<{ name: string; type: string; base64: string }> = []
                 if (collateralFiles.length > 0) {
-                    const uploadPromises = collateralFiles.map(async (file) => {
-                        const timestamp = Date.now()
-                        // Unique name to prevent collision
-                        const uniqueName = `${timestamp}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-                        const { data, error } = await supabase.storage
-                            .from('collateral')
-                            .upload(`${userId}/${uniqueName}`, file)
-
-                        if (error) throw error
-                        return { path: data.path, desc: collateralDesc } // For now same desc for all
-                    })
-
-                    const results = await Promise.all(uploadPromises)
-                    uploadedImages.push(...results)
+                    collateralImages = await Promise.all(collateralFiles.map(fileToBase64))
                 }
 
-                // Prepare Disbursement Details
-                const disbursementDetails = disbursementMethod === 'mobile_money'
-                    ? { network: mobileNetwork, number: mobileNumber }
-                    : { bank_name: bankName, account_name: accountName, account_number: accountNumber }
+                // Submit to server action
+                const result = await submitLoanApplication({
+                    userId,
+                    businessId,
+                    productId: selectedProductId,
+                    amount,
+                    purpose,
+                    employmentStatus: 'employed', // You may want to add this to form
+                    monthlyIncome: '0', // You may want to add this to form
+                    collateralType: collateralDesc,
+                    collateralValue: amount, // Using loan amount as collateral value
+                    collateralDescription: collateralDesc,
+                    collateralImages: collateralImages.length > 0 ? collateralImages : undefined
+                })
 
-                // 2. Insert Loan
-                const { data: loan, error } = await supabase.from('loans').insert({
-                    user_id: userId,
-                    business_id: businessId,
-                    product_id: selectedProductId,
-                    amount: parseFloat(amount),
-                    duration_months: selectedRate.duration_unit === 'month' ? selectedRate.duration_value : Math.ceil(selectedRate.duration_value / 4),
-                    interest_rate: selectedRate.interest_rate,
-                    applied_rate: selectedRate.interest_rate,
-
-                    // Snapshot Values (New)
-                    principal_amount: repaymentPreview.principal,
-                    interest_amount: repaymentPreview.interest,
-                    total_payable_amount: repaymentPreview.total,
-                    interest_rate_pct_used: selectedRate.interest_rate,
-
-                    // Disbursement (New)
-                    disbursement_method: disbursementMethod,
-                    disbursement_details: disbursementDetails,
-
-                    purpose: purpose,
-                    collateral_description: collateralDesc,
-                    // Legacy field fallback (first image or null)
-                    collateral_image_url: uploadedImages[0]?.path || null,
-
-                    status: LOAN_STATUS.SUBMITTED
-                }).select().single()
-
-                if (error) throw error
-
-                // 3. Insert Collateral Records (New Table)
-                if (uploadedImages.length > 0 && loan) {
-                    const collateralRecords = uploadedImages.map(img => ({
-                        loan_id: loan.id,
-                        image_url: img.path,
-                        description: img.desc || collateralDesc
-                    }))
-
-                    const { error: colError } = await supabase.from('loan_collateral').insert(collateralRecords)
-                    if (colError) {
-                        console.error("Failed to save collateral records, but loan created.", colError)
-                        toast.error("Loan submitted but collateral images failed to link. Please contact support.")
-                    }
+                if (result?.error) {
+                    showErrorToast(result.error, result.requestId)
+                } else {
+                    showSuccessToast("Application submitted successfully!")
+                    // Redirect happens in server action
                 }
-
-                toast.success("Application Submitted Successfully!")
-                router.push('/portal/loans')
-
             } catch (error: any) {
-                console.error(error)
-                toast.error(error.message || "Failed to submit application")
+                showErrorToast(error.message || "Failed to submit application")
             }
         })
     }

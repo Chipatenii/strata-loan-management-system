@@ -99,7 +99,7 @@ export default async function AdminDashboard() {
                         <CardContent className="relative">
                             <div className="text-2xl font-bold">{pendingKyc || 0}</div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {pendingKyc > 0 ? 'Review applications →' : 'No pending reviews'}
+                                {(pendingKyc ?? 0) > 0 ? 'Review applications →' : 'No pending reviews'}
                             </p>
                         </CardContent>
                     </Card>
@@ -120,7 +120,7 @@ export default async function AdminDashboard() {
                         <CardContent className="relative">
                             <div className="text-2xl font-bold">{pendingLoans || 0}</div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {pendingLoans > 0 ? 'Review applications →' : 'No pending reviews'}
+                                {(pendingLoans ?? 0) > 0 ? 'Review applications →' : 'No pending reviews'}
                             </p>
                         </CardContent>
                     </Card>

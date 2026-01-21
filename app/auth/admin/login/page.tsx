@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { showErrorToast, showSuccessToast } from "@/lib/errors"
 import Link from "next/link"
 import { useTransition, useState } from "react"
 import { login } from "@/lib/actions/auth"
@@ -34,9 +34,9 @@ export default function AdminLoginPage() {
         startTransition(async () => {
             const result = await login(formData, 'admin')
             if (result?.error) {
-                toast.error(result.error)
+                showErrorToast(result.error, result.requestId)
             } else {
-                toast.success("Welcome back!")
+                showSuccessToast("Welcome back!")
             }
         })
     }

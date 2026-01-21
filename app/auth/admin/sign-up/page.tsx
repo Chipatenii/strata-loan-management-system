@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { showErrorToast, showSuccessToast } from "@/lib/errors"
 import Link from "next/link"
 import { useTransition, useState } from "react"
 import { signUpAdmin } from "@/lib/actions/auth" // Corrected import
@@ -34,16 +34,16 @@ export default function AdminRegisterPage() {
         e.preventDefault()
 
         if (formData.password !== formData.confirmPassword) {
-            toast.error("Passwords do not match")
+            showErrorToast("Passwords do not match")
             return
         }
 
         startTransition(async () => {
             const result = await signUpAdmin(formData)
             if (result?.error) {
-                toast.error(result.error)
+                showErrorToast(result.error, result.requestId)
             } else {
-                toast.success("Business created! Redirecting...")
+                showSuccessToast("Business created! Redirecting...")
             }
         })
     }

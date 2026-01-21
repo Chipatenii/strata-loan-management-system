@@ -132,59 +132,67 @@ export const signUpAdmin = withServerAction(
     'auth/signUpAdmin'
 )
 
-export async function signUpCustomer(formData: z.infer<typeof customerRegisterSchema>) {
-    const supabase = await createClient()
-    const adminSupabase = createAdminClient()
+export const signUpCustomer = withServerAction(
+    async (requestId, formData: z.infer<typeof customerRegisterSchema>) => {
+        const supabase = await createClient()
+        const adminSupabase = createAdminClient()
 
-    // 1. Validate Business Code
-    const { data: businessData, error: businessError } = await adminSupabase
-        .from('businesses')
-        .select('id')
-        .eq('code', formData.businessCode)
-        .single()
+        // 1. Validate Business Code
+        const { data: businessData, error: businessError } = await adminSupabase
+            .from('businesses')
+            .select('id')
+            .eq('code', formData.businessCode)
+            .single()
 
-    if (businessError || !businessData) {
-        return { error: 'Invalid Business Code.' }
-    }
-
-    // 2. Sign up Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-            data: {
-                role: 'customer',
-                full_name: 'Customer', // Placeholder
-            }
+        if (businessError || !businessData) {
+            throw createAppError({
+                code: ErrorCode.NOT_FOUND,
+                message: 'Invalid Business Code.',
+                location: 'auth/signUpCustomer/validateCode',
+                requestId
+            })
         }
-    })
 
-    if (authError || !authData.user) {
-        return { error: authError?.message || 'Signup failed' }
-    }
-
-    const userId = authData.user.id
-
-    // 3. Create Public User Profile
-    const { error: userError } = await adminSupabase
-        .from('users')
-        .insert({
-            id: userId,
+        // 2. Sign up Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
             email: formData.email,
-            role: 'customer',
-            business_id: businessData.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            address: formData.address,
+            password: formData.password,
+            options: {
+                data: {
+                    role: 'customer',
+                    full_name: 'Customer', // Placeholder
+                }
+            }
         })
 
-    if (userError) {
-        return { error: 'Failed to create user profile: ' + userError.message }
-    }
+        if (authError || !authData.user) {
+            throw normalizeSupabaseError(authError || new Error('Signup failed'), 'auth/signUpCustomer/signup', requestId)
+        }
 
-    revalidatePath('/', 'layout')
-    redirect('/portal?welcome=true')
-}
+        const userId = authData.user.id
+
+        // 3. Create Public User Profile
+        const { error: userError } = await adminSupabase
+            .from('users')
+            .insert({
+                id: userId,
+                email: formData.email,
+                role: 'customer',
+                business_id: businessData.id,
+                full_name: formData.fullName,
+                phone: formData.phone,
+                address: formData.address,
+            })
+
+        if (userError) {
+            throw normalizeSupabaseError(userError, 'auth/signUpCustomer/createUser', requestId)
+        }
+
+        revalidatePath('/', 'layout')
+        redirect('/portal?welcome=true')
+    },
+    'auth/signUpCustomer'
+)
 
 export async function signout() {
     const supabase = await createClient()

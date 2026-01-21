@@ -6,14 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
-import { createBrowserSupabaseClient } from "@/lib/supabase-client"
+import { showErrorToast, showSuccessToast } from "@/lib/errors"
 import { Loader2, ChevronRight, ChevronLeft, UploadCloud } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { submitKyc } from "@/lib/actions/kyc"
 
 export function KycForm({ userId, businessId }: { userId: string, businessId: string }) {
     const [pending, startTransition] = useTransition()
-    const router = useRouter()
     const [step, setStep] = useState(1)
 
     // State for all fields
@@ -54,81 +52,61 @@ export function KycForm({ userId, businessId }: { userId: string, businessId: st
     const nextStep = () => setStep(s => s + 1)
     const prevStep = () => setStep(s => s - 1)
 
-    const handleUpload = async (bucket: string, file: File, path: string) => {
-        const supabase = createBrowserSupabaseClient()
-        const { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(path, file, { upsert: true })
-
-        if (error) throw error
-        return data.path
+    /**
+     * Converts a File to base64 string
+     */
+    const fileToBase64 = (file: File): Promise<{ name: string; type: string; base64: string }> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1]
+                resolve({
+                    name: file.name,
+                    type: file.type,
+                    base64
+                })
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!idFile || !payslipFile || !bankStatementFile || !proofFile) {
-            toast.error("Please upload all required documents.")
+            showErrorToast("Please upload all required documents.")
             return
         }
 
         startTransition(async () => {
             try {
-                const supabase = createBrowserSupabaseClient()
-                const timestamp = Date.now()
+                // Convert files to base64
+                const [idFileData, payslipFileData, bankFileData, proofFileData] = await Promise.all([
+                    fileToBase64(idFile),
+                    fileToBase64(payslipFile),
+                    fileToBase64(bankStatementFile),
+                    fileToBase64(proofFile)
+                ])
 
-                toast.info("Uploading documents...")
-
-                const idPath = await handleUpload('kyc-docs', idFile, `${userId}/id_${timestamp}_${idFile.name}`)
-                const payslipPath = await handleUpload('kyc-docs', payslipFile, `${userId}/payslip_${timestamp}_${payslipFile.name}`)
-                const bankPath = await handleUpload('kyc-docs', bankStatementFile, `${userId}/bank_${timestamp}_${bankStatementFile.name}`)
-                const proofPath = await handleUpload('kyc-docs', proofFile, `${userId}/proof_${timestamp}_${proofFile.name}`)
-
-                // Insert KYC Record with all new fields
-                const { error } = await supabase.from('kyc_records').insert({
-                    user_id: userId,
-                    business_id: businessId,
-                    status: 'pending_review',
-
-                    // Documents
-                    id_document_url: idPath,
-                    payslip_url: payslipPath,
-                    bank_statement_url: bankPath,
-                    proof_of_address_url: proofPath,
-
-                    // Structured Data
-                    dob: formData.dob || null,
-                    nrc_passport_number: formData.nrc_passport_number,
-                    gender: formData.gender,
-                    marital_status: formData.marital_status,
-                    residential_address: formData.residential_address,
-                    city_town: formData.city_town,
-
-                    employment_status: formData.employment_status,
-                    employer_name: formData.employer_name,
-                    job_title: formData.job_title,
-                    monthly_income: formData.monthly_income ? parseFloat(formData.monthly_income) : null,
-                    pay_day: formData.pay_day,
-
-                    bank_name: formData.bank_name,
-                    account_number: formData.account_number,
-
-                    nok_full_name: formData.nok_full_name,
-                    nok_relationship: formData.nok_relationship,
-                    nok_phone: formData.nok_phone,
-                    nok_address: formData.nok_address,
-
-                    data: { uploaded_at: new Date().toISOString() }
+                // Submit to server action
+                const result = await submitKyc({
+                    userId,
+                    businessId,
+                    ...formData,
+                    idFile: idFileData,
+                    payslipFile: payslipFileData,
+                    bankStatementFile: bankFileData,
+                    proofFile: proofFileData
                 })
 
-                if (error) throw error
-
-                toast.success("KYC Submitted successfully!")
-                router.refresh()
-                router.push('/portal')
-
+                if (result?.error) {
+                    showErrorToast(result.error, result.requestId)
+                } else {
+                    showSuccessToast("KYC submitted successfully!")
+                    // Redirect happens in server action
+                }
             } catch (error: any) {
-                console.error(error)
-                toast.error(error.message || "Failed to submit KYC")
+                showErrorToast(error.message || "Failed to submit KYC")
             }
         })
     }

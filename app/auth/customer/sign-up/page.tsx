@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { showErrorToast, showSuccessToast } from "@/lib/errors"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useState, useTransition } from "react"
@@ -42,16 +42,16 @@ function SignUpForm() {
         e.preventDefault()
 
         if (formData.password !== formData.confirmPassword) {
-            toast.error("Passwords do not match")
+            showErrorToast("Passwords do not match")
             return
         }
 
         startTransition(async () => {
             const result = await signUpCustomer(formData)
             if (result?.error) {
-                toast.error(result.error)
+                showErrorToast(result.error, result.requestId)
             } else {
-                toast.success("Account created! Redirecting to portal...")
+                showSuccessToast("Account created! Redirecting to portal...")
             }
         })
     }
