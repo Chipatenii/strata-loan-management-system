@@ -64,6 +64,7 @@ export default function CustomerLoginPage() {
                             <Input
                                 id="email"
                                 type="email"
+                                autoComplete="email"
                                 placeholder="you@example.com"
                                 required
                                 value={formData.email}
@@ -76,6 +77,7 @@ export default function CustomerLoginPage() {
                             <Input
                                 id="password"
                                 type="password"
+                                autoComplete="current-password"
                                 required
                                 value={formData.password}
                                 onChange={handleChange}

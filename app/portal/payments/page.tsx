@@ -3,25 +3,47 @@ import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { redirect } from "next/navigation"
 import { CreditCard, AlertCircle } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
+
+// Helper to fetch balance from ledger
+async function getLoanBalance(supabase: any, loanId: string): Promise<number> {
+    const { data } = await supabase
+        .from('ledger')
+        .select('balance_after')
+        .eq('loan_id', loanId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+    return data?.balance_after || 0
+}
 
 export default async function NewPaymentPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/login')
+    if (!user) redirect('/auth/customer/login')
 
     // Fetch active loans
     const { data: loans } = await supabase
         .from('loans')
-        .select('*')
+        .select('id, amount, purpose, status, duration_months')
         .eq('user_id', user.id)
-        .in('status', ['active', 'defaulted']) // Only pay allowed statuses
+        .in('status', ['active', 'defaulted'])
 
     // Get Business Config
     const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
     const { data: business } = await supabase.from('businesses').select('payment_config').eq('id', profile?.business_id).single()
 
     const paymentConfig = business?.payment_config || {}
+
+    // Fetch balances for each loan
+    const loansWithBalance = await Promise.all(
+        (loans || []).map(async (loan: any) => {
+            const balance = await getLoanBalance(supabase, loan.id)
+            return { ...loan, balance }
+        })
+    )
 
     return (
         <div className="space-y-6">
@@ -37,7 +59,7 @@ export default async function NewPaymentPage() {
             </div>
 
             {/* Payment Form */}
-            {loans && loans.length > 0 ? (
+            {loansWithBalance && loansWithBalance.length > 0 ? (
                 <Card>
                     <CardHeader>
                         <CardTitle>Payment Details</CardTitle>
@@ -49,7 +71,7 @@ export default async function NewPaymentPage() {
                         <PaymentForm
                             userId={user.id}
                             businessId={profile?.business_id}
-                            loans={loans || []}
+                            loans={loansWithBalance}
                             paymentConfig={paymentConfig}
                         />
                     </CardContent>

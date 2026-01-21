@@ -69,6 +69,24 @@ export default async function SettingsPage() {
                 </CardContent>
             </Card>
 
+            {/* Business Verification Docs */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Verification Documents
+                    </CardTitle>
+                    <CardDescription>
+                        Upload official business documents to become a verified lender.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <BusinessDocumentManagerWrapper
+                        businessId={business?.id || ''}
+                    />
+                </CardContent>
+            </Card>
+
             {/* Payment Instructions */}
             <Card>
                 <CardHeader>
@@ -89,4 +107,19 @@ export default async function SettingsPage() {
             </Card>
         </div>
     )
+}
+
+// Separate component for data fetching to avoid clutter
+import { BusinessDocumentManager } from "@/components/admin/business-document-manager"
+
+async function BusinessDocumentManagerWrapper({ businessId }: { businessId: string }) {
+    if (!businessId) return null
+    const supabase = await createClient()
+    const { data: documents } = await supabase
+        .from('business_documents')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('uploaded_at', { ascending: false })
+
+    return <BusinessDocumentManager businessId={businessId} documents={documents || []} />
 }

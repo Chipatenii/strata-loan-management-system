@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { formatCurrency } from "@/lib/utils"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, Smartphone, Building2 } from "lucide-react"
@@ -119,7 +120,7 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
                             <SelectContent>
                                 {loans.map(loan => (
                                     <SelectItem key={loan.id} value={loan.id}>
-                                        Loan #{loan.id.slice(0, 6)} - Balance: Not Calculated Yet
+                                        Loan #{loan.id.slice(0, 6)} • Balance: {formatCurrency(loan.balance || 0)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
