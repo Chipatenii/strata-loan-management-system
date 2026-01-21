@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
-import { LoanReviewActions } from "@/components/admin/loan-actions"
+import { LoanDecisionPanel } from "@/components/admin/loan-decision-panel"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink } from "lucide-react"
@@ -11,6 +11,16 @@ import { ArrowLeft, ExternalLink } from "lucide-react"
 export default async function AdminLoanDetailPage({ params }: { params: { id: string } }) {
     const supabase = await createClient()
     const { id } = params
+
+    // Get current user and business_id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return <div>Not authenticated</div>
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('business_id')
+        .eq('id', user.id)
+        .single()
 
     // Fetch Loan with Collateral and User
     const { data: loan } = await supabase
@@ -204,14 +214,11 @@ export default async function AdminLoanDetailPage({ params }: { params: { id: st
                         </CardContent>
                     </Card>
 
-                    <Card className="border-2 border-primary">
-                        <CardHeader>
-                            <CardTitle>Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <LoanReviewActions loanId={loan.id} />
-                        </CardContent>
-                    </Card>
+                    <LoanDecisionPanel
+                        loanId={loan.id}
+                        currentStatus={loan.status}
+                        businessId={profile?.business_id!}
+                    />
                 </div>
             </div>
         </div>
