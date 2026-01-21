@@ -89,7 +89,7 @@ export const updateBusinessProfile = withServerAction(
         revalidatePath('/admin/settings')
         revalidatePath('/admin')
 
-        return { success: true }
+        return { data: { success: true } }
     },
     'business/updateProfile'
 )

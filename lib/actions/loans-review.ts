@@ -66,7 +66,7 @@ export const approveLoan = withServerAction(
         revalidatePath('/admin/loans')
         revalidatePath(`/admin/loans/${loanId}`)
 
-        return { success: true }
+        return { data: { success: true } }
     },
     'loans/approveLoan'
 )
@@ -120,7 +120,7 @@ export const rejectLoan = withServerAction(
         revalidatePath('/admin/loans')
         revalidatePath(`/admin/loans/${loanId}`)
 
-        return { success: true }
+        return { data: { success: true } }
     },
     'loans/rejectLoan'
 )
