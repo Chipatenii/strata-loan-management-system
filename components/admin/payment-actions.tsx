@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Check, X, Loader2 } from "lucide-react"
 import { useState, useTransition } from "react"
-import { reconcilePayment } from "@/lib/actions/admin"
+import { reconcilePayment } from "@/lib/actions/payments-review"
 import { toast } from "sonner"
 import {
     Dialog,

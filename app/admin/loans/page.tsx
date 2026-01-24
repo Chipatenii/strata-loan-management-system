@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LoanReviewActions } from "@/components/admin/loan-actions"
 import { formatCurrency } from "@/lib/utils"
 import { User, Banknote, Calendar, FileText } from "lucide-react"
 import Link from "next/link"
@@ -108,6 +107,11 @@ export default async function LoanQueuePage() {
                         >
                             Review Application
                         </Link>
+                        {/* Note: In the card view we just link to details. Actions are in the table or details page.
+                            Wait, the user wants actions here? The component LoanReviewActions isn't used in Card content in original file?
+                            Let's check where it IS used. Line 12 import.
+                            It's NOT used in renderLoanCards?
+                        */}
                     </CardContent>
                 </Card>
             )

@@ -4,25 +4,26 @@ import { Button } from "@/components/ui/button"
 import { Check, X } from "lucide-react"
 import { useTransition } from "react"
 
-import { approveLoan, rejectLoan } from "@/lib/actions/admin"
+import { approveLoan, rejectLoan } from "@/lib/actions/loans-review"
 import { toast } from "sonner"
 
-export function LoanReviewActions({ loanId }: { loanId: string }) {
+export function LoanReviewActions({ loanId, businessId }: { loanId: string, businessId: string }) {
     const [pending, startTransition] = useTransition()
 
     const handleApprove = () => {
         if (!confirm("Approve this loan? This will disburse funds (simulation) and start interest.")) return
         startTransition(async () => {
-            const res = await approveLoan(loanId)
+            const res = await approveLoan({ loanId, businessId })
             if (res.error) toast.error(res.error)
             else toast.success("Loan Approved & Disbursed")
         })
     }
 
     const handleReject = () => {
+        const notes = prompt("Enter rejection reason:") || "Rejected by admin"
         if (!confirm("Reject this loan application?")) return
         startTransition(async () => {
-            const res = await rejectLoan(loanId)
+            const res = await rejectLoan({ loanId, businessId, notes })
             if (res.error) toast.error(res.error)
             else toast.success("Loan Rejected")
         })

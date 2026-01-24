@@ -12,8 +12,16 @@ export default async function PortalDashboard() {
 
     if (!user) return <div>Not authenticated</div>
 
+    // DEBUG: Fetch ALL loans for this user to see what statuses exist
+    const { data: allUserLoans } = await supabase
+        .from('loans')
+        .select('id, status, amount, created_at')
+        .eq('user_id', user.id)
+
+    console.log('DEBUG: All loans for user:', user.id, allUserLoans)
+
     // Fetch user's active loan
-    const { data: activeLoan } = await supabase
+    const { data: activeLoan, error: activeLoanError } = await supabase
         .from('loans')
         .select('*')
         .eq('user_id', user.id)
@@ -21,6 +29,12 @@ export default async function PortalDashboard() {
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
+
+    if (activeLoanError && activeLoanError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        console.error('DEBUG: Error fetching active loan:', activeLoanError)
+    } else {
+        console.log('DEBUG: Active loan query result:', activeLoan)
+    }
 
     // Fetch pending loan applications
     const { count: pendingLoans } = await supabase

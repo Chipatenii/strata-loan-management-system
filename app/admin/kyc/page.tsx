@@ -113,7 +113,7 @@ export default async function KycQueuePage() {
                     )}
 
                     <div className="pt-2">
-                        <KycReviewActions recordId={record.id} />
+                        <KycReviewActions recordId={record.id} businessId={profile?.business_id!} />
                     </div>
                 </CardContent>
             </Card>
@@ -181,7 +181,7 @@ export default async function KycQueuePage() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <KycReviewActions recordId={record.id} />
+                                    <KycReviewActions recordId={record.id} businessId={profile?.business_id!} />
                                 </TableCell>
                             </TableRow>
                         ))}

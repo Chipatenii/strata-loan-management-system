@@ -1,7 +1,7 @@
 'use client'
 
 import { LOAN_STATUS } from "@/lib/constants"
-import { calculateSimpleInterest } from "@/lib/finance/interest"
+import { calculateSimpleInterest } from "@/lib/domain/finance"
 
 import { useState, useTransition, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -125,6 +125,7 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
                     userId,
                     businessId,
                     productId: selectedProductId,
+                    rateId: selectedRateId,
                     amount,
                     purpose,
                     employmentStatus: 'employed', // You may want to add this to form

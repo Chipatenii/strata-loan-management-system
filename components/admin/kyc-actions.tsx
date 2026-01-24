@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Check, X, Loader2 } from "lucide-react"
 import { useTransition } from "react"
 
-import { approveKyc, rejectKyc } from "@/lib/actions/admin"
+import { approveKyc, rejectKyc } from "@/lib/actions/kyc-review"
 import { toast } from "sonner"
 
-export function KycReviewActions({ recordId }: { recordId: string }) {
+export function KycReviewActions({ recordId, businessId }: { recordId: string, businessId: string }) {
     const [pending, startTransition] = useTransition()
 
     const handleApprove = () => {
         startTransition(async () => {
-            const res = await approveKyc(recordId)
+            const res = await approveKyc({ recordId, businessId })
             if (res.error) toast.error(res.error)
             else toast.success("KYC Approved")
         })
@@ -23,7 +23,7 @@ export function KycReviewActions({ recordId }: { recordId: string }) {
         if (!reason) return
 
         startTransition(async () => {
-            const res = await rejectKyc(recordId, reason)
+            const res = await rejectKyc({ recordId, businessId, reason })
             if (res.error) toast.error(res.error)
             else toast.success("KYC Rejected")
         })
