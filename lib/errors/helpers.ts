@@ -93,9 +93,18 @@ export function normalizeSupabaseError(
     const details = error?.details
     const hint = error?.hint
 
+    // Customize message for known auth errors
+    let finalMessage = 'A database error occurred. Please try again.'
+    let finalCode = ErrorCode.SUPABASE_QUERY_FAILED
+
+    if (code === 'invalid_credentials') {
+        finalMessage = 'Invalid email or password'
+        finalCode = ErrorCode.AUTH_REQUIRED
+    }
+
     return new AppError({
-        code: ErrorCode.SUPABASE_QUERY_FAILED,
-        message: 'A database error occurred. Please try again.',
+        code: finalCode,
+        message: finalMessage,
         location,
         requestId: rid,
         meta: {

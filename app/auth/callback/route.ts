@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     // if "next" is in param, use it as the redirect URL
     const next = searchParams.get('next') ?? '/'
 
+    console.log('[Auth Callback] Code present:', !!code, 'Next:', next)
+
     if (code) {
         const cookieStore = {
             getAll() {

@@ -36,8 +36,9 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     const path = request.nextUrl.pathname
-
     const userRole = user?.user_metadata?.role
+
+    console.log('[Middleware] Path:', path, 'User:', user?.id ? 'Logged In' : 'Guest', 'Role:', userRole)
 
     // 1. Unauthenticated Users
     if (!user) {
