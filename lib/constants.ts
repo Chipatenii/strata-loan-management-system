@@ -3,6 +3,7 @@ export const KYC_STATUS = {
     PENDING_REVIEW: 'pending_review',
     APPROVED: 'approved',
     REJECTED: 'rejected',
+    SUBMITTED: 'submitted',
 }
 
 export const LOAN_STATUS = {

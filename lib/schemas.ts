@@ -51,4 +51,5 @@ export const loanProductRateSchema = z.object({
 export const paymentConfigSchema = z.object({
     mobile_money_instructions: z.string().optional(),
     bank_transfer_instructions: z.string().optional(),
+    general_instructions: z.string().optional(),
 })

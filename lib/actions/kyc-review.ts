@@ -60,6 +60,8 @@ export const approveKyc = withServerAction(
         }
 
         revalidatePath('/admin/kyc')
+        revalidatePath('/portal')
+        revalidatePath('/portal/kyc')
         return { data: { success: true } }
     },
     'kyc/approveKyc'
@@ -111,6 +113,8 @@ export const rejectKyc = withServerAction(
         }
 
         revalidatePath('/admin/kyc')
+        revalidatePath('/portal')
+        revalidatePath('/portal/kyc')
         return { data: { success: true } }
     },
     'kyc/rejectKyc'

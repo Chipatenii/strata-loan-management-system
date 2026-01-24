@@ -66,3 +66,17 @@ export function calculateLedgerBalance(
             return balance;
     }
 }
+
+/**
+ * Calculates the current outstanding balance for a loan.
+ * Logic: Total Payable Amount (or Principal) - Total Approved Payments.
+ */
+export function calculateOutstandingBalance(
+    loan: { amount: number | string, total_payable_amount?: number | string | null },
+    payments: { amount: number | string }[] | null | undefined
+): number {
+    const totalPayable = Number(loan.total_payable_amount || loan.amount) || 0;
+    const totalPaid = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+
+    return Number((totalPayable - totalPaid).toFixed(2));
+}

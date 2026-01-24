@@ -5,12 +5,18 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { paymentConfigSchema } from '@/lib/schemas'
 
-export async function updatePaymentConfig(businessId: string, config: z.infer<typeof paymentConfigSchema>) {
+export async function updatePaymentConfig(
+    businessId: string,
+    config: z.infer<typeof paymentConfigSchema>,
+    instructions?: string
+) {
     const supabase = await createClient()
 
-    // We verify membership via RLS, but double check we are updating correct biz
     const { error } = await supabase.from('businesses')
-        .update({ payment_config: config })
+        .update({
+            payment_config: config,
+            payment_instructions: instructions
+        })
         .eq('id', businessId)
 
     if (error) {
@@ -18,5 +24,7 @@ export async function updatePaymentConfig(businessId: string, config: z.infer<ty
     }
 
     revalidatePath('/admin/settings')
+    revalidatePath('/portal/payments')
     return { success: true }
 }
+

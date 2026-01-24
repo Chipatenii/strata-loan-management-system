@@ -20,7 +20,7 @@ export default async function SettingsPage() {
 
     const { data: business } = await supabase
         .from('businesses')
-        .select('*')
+        .select('id, name, code, payment_config, trading_name, email, phone, physical_address, updated_at')
         .eq('id', profile?.business_id)
         .single()
 

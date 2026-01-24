@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
+import { calculateOutstandingBalance } from "@/lib/domain/finance"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Banknote, Calendar, AlertCircle, TrendingUp, FileText } from "lucide-react"
+import { Banknote, Calendar, AlertCircle, TrendingUp, FileText, ShieldCheck, ShieldAlert, Shield } from "lucide-react"
 
 export default async function PortalDashboard() {
     const supabase = await createClient()
@@ -12,29 +13,32 @@ export default async function PortalDashboard() {
 
     if (!user) return <div>Not authenticated</div>
 
-    // DEBUG: Fetch ALL loans for this user to see what statuses exist
-    const { data: allUserLoans } = await supabase
-        .from('loans')
-        .select('id, status, amount, created_at')
-        .eq('user_id', user.id)
-
-    console.log('DEBUG: All loans for user:', user.id, allUserLoans)
-
     // Fetch user's active loan
     const { data: activeLoan, error: activeLoanError } = await supabase
         .from('loans')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['active', 'approved', 'disbursed'])
+        .in('status', ['active', 'approved', 'defaulted'])
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
 
-    if (activeLoanError && activeLoanError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        console.error('DEBUG: Error fetching active loan:', activeLoanError)
+    if (activeLoanError) {
+        // PGRST116 is "no rows returned" from .single() - this is expected if no active loan
+        if (activeLoanError.code !== 'PGRST116') {
+            console.error('DEBUG: Error fetching active loan:', JSON.stringify(activeLoanError, null, 2))
+        }
     } else {
-        console.log('DEBUG: Active loan query result:', activeLoan)
+        console.log('DEBUG: Active loan query result:', activeLoan ? activeLoan.id : 'None')
     }
+
+    // Fetch KYC Status
+    const { data: kyc } = await supabase
+        .from('kyc_records')
+        .select('status')
+        .eq('user_id', user.id)
+        .single()
+    const kycStatus = kyc?.status || 'not_submitted'
 
     // Fetch pending loan applications
     const { count: pendingLoans } = await supabase
@@ -55,13 +59,27 @@ export default async function PortalDashboard() {
             .eq('status', 'approved')
 
         const totalPaid = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
-        currentBalance = Number(activeLoan.total_payable_amount || activeLoan.amount) - totalPaid
+        currentBalance = calculateOutstandingBalance(activeLoan, payments)
 
-        // Calculate next due date (simplified - should use ledger)
-        if (activeLoan.disbursed_at) {
-            const disbursedDate = new Date(activeLoan.disbursed_at)
-            disbursedDate.setMonth(disbursedDate.getMonth() + 1)
-            nextDueDate = disbursedDate.toLocaleDateString('en-US', {
+        // Add totalPaid to the context (re-using the currentBalance logic but keeping track of total)
+        activeLoan.totalPaid = totalPaid
+
+        // Calculate next due date (Prioritize explicit due_date, then calculate from disbursement/approval)
+        const baseDate = activeLoan.due_date
+            || activeLoan.disbursed_at
+            || activeLoan.reviewed_at
+            || activeLoan.approved_at
+            || activeLoan.created_at
+
+        if (baseDate) {
+            const date = new Date(baseDate)
+
+            // If it's NOT an explicit due_date, we assume the next milestone is 1 month from the base date
+            if (!activeLoan.due_date) {
+                date.setMonth(date.getMonth() + 1)
+            }
+
+            nextDueDate = date.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
@@ -70,7 +88,7 @@ export default async function PortalDashboard() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 md:px-0 pb-10">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
                 <Link href="/portal/loans/new">
@@ -95,9 +113,14 @@ export default async function PortalDashboard() {
                             {formatCurrency(currentBalance)}
                         </div>
                         {activeLoan && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {activeLoan.duration_months} month loan
-                            </p>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="text-xs text-muted-foreground">
+                                    {activeLoan.duration_months} month loan
+                                </p>
+                                <p className="text-xs font-medium text-green-600">
+                                    Paid: {formatCurrency(activeLoan.totalPaid || 0)}
+                                </p>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -139,28 +162,25 @@ export default async function PortalDashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Loan Status
+                            Verification Status
                         </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        {kycStatus === 'approved' ? (
+                            <ShieldCheck className="h-4 w-4 text-green-600" />
+                        ) : kycStatus === 'rejected' ? (
+                            <ShieldAlert className="h-4 w-4 text-destructive" />
+                        ) : (
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                        )}
                     </CardHeader>
                     <CardContent>
-                        {activeLoan ? (
-                            <>
-                                <div className="text-2xl font-bold capitalize">
-                                    {activeLoan.status}
-                                </div>
-                                <Badge variant="default" className="mt-2 bg-green-600">
-                                    Active
-                                </Badge>
-                            </>
-                        ) : (
-                            <>
-                                <div className="text-2xl font-bold">--</div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    No active loan
-                                </p>
-                            </>
-                        )}
+                        <div className="text-2xl font-bold capitalize">
+                            {kycStatus.replace('_', ' ')}
+                        </div>
+                        <Link href="/portal/kyc">
+                            <p className="text-xs text-primary hover:underline mt-1 cursor-pointer">
+                                {kycStatus === 'approved' ? 'View Profile' : 'Check Status'} →
+                            </p>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
@@ -187,6 +207,12 @@ export default async function PortalDashboard() {
                                     <p className="text-sm text-muted-foreground">Total Payable</p>
                                     <p className="text-lg font-semibold">
                                         {formatCurrency(activeLoan.total_payable_amount || activeLoan.amount)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Paid</p>
+                                    <p className="text-lg font-semibold text-green-600">
+                                        {formatCurrency(activeLoan.totalPaid || 0)}
                                     </p>
                                 </div>
                                 <div>

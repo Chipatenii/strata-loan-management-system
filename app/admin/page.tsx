@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Plus, FileText, Banknote, BarChart3, TrendingUp, Shield, Clock, AlertCircle } from "lucide-react"
+import { Plus, FileText, Banknote, BarChart3, TrendingUp, Shield, Clock, AlertCircle, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
+import { calculateOutstandingBalance } from "@/lib/domain/finance"
 import { LOAN_STATUS, KYC_STATUS } from "@/lib/constants"
 import { getAppOrigin } from "@/lib/config/app"
 import { InviteCard } from "@/components/admin/invite-card"
@@ -16,10 +17,12 @@ export default async function AdminDashboard() {
 
     // Fetch Business Code
     const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
-    const { data: business } = await supabase.from('businesses').select('*').eq('id', profile?.business_id).single()
+    const { data: business } = await supabase.from('businesses').select('id, name, code').eq('id', profile?.business_id).single()
 
     // Use centralized app origin
     const inviteLink = `${getAppOrigin()}/auth/customer/sign-up?code=${business?.code}`
+
+    if (!business) return <div className="p-8 text-center text-muted-foreground">Business configuration not found.</div>
 
     // Real Metrics using Supabase counts/sums
     // 1. Pending Loans
@@ -29,33 +32,48 @@ export default async function AdminDashboard() {
         .eq('business_id', business.id)
         .in('status', [LOAN_STATUS.PENDING, LOAN_STATUS.SUBMITTED, LOAN_STATUS.UNDER_REVIEW])
 
-    // 2. Pending KYC
-    // We need to filter KYC by users belonging to this business. 
-    // This requires a join or two-step. 
-    // Join: kyc_records -> users -> business_id
+    // 2. Pending KYC (Filter by business_id directly for robustness)
     const { count: pendingKyc } = await supabase
         .from('kyc_records')
-        .select('*, users!inner(business_id)', { count: 'exact', head: true })
-        .eq('status', KYC_STATUS.PENDING_REVIEW)
-        .eq('users.business_id', business.id)
+        .select('id', { count: 'exact', head: true })
+        .in('status', [KYC_STATUS.PENDING_REVIEW, KYC_STATUS.SUBMITTED])
+        .eq('business_id', business.id)
 
-    // 3. Total Disbursed (Active + Closed + Defaulted)
+    // 2b. Verified Customers (Approved KYC)
+    const { count: verifiedCustomers } = await supabase
+        .from('kyc_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', KYC_STATUS.APPROVED)
+        .eq('business_id', business.id)
+
+    // 3. Pending Payments
+    const { count: pendingPayments } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', business.id)
+        .eq('status', 'pending')
+
+    // 4. Total Disbursed (Active + Closed + Defaulted + Approved)
     const { data: disbursedLoans } = await supabase
         .from('loans')
         .select('amount')
         .eq('business_id', business.id)
-        .in('status', ['active', 'closed', 'defaulted'])
+        .in('status', ['active', 'closed', 'defaulted', 'approved'])
 
     const totalDisbursed = disbursedLoans?.reduce((sum, loan) => sum + Number(loan.amount), 0) || 0
 
-    // 4. Outstanding (Active + Defaulted) - Principal only for dashboard speed
-    const { data: activeLoans } = await supabase
+    // 4. Outstanding Portfolio Value (Active + Defaulted + Approved)
+    const { data: activePortfolio } = await supabase
         .from('loans')
-        .select('amount')
+        .select('id, amount, total_payable_amount, payments(amount, status)')
         .eq('business_id', business.id)
-        .in('status', ['active', 'defaulted'])
+        .in('status', ['active', 'defaulted', 'approved'])
 
-    const totalOutstanding = activeLoans?.reduce((sum, loan) => sum + Number(loan.amount), 0) || 0
+    const totalOutstanding = activePortfolio?.reduce((sum, loan) => {
+        // Only count approved payments
+        const approvedPayments = (loan.payments as any[])?.filter(p => p.status === 'approved') || []
+        return sum + calculateOutstandingBalance(loan, approvedPayments)
+    }, 0) || 0
 
     return (
         <div className="space-y-6">
@@ -127,7 +145,7 @@ export default async function AdminDashboard() {
                 </Link>
 
                 {/* Outstanding Balance - Warning metric */}
-                <Link href="/admin/reports" className="block">
+                <Link href="/admin/reports" className="block md:col-start-4">
                     <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
                         <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -146,11 +164,53 @@ export default async function AdminDashboard() {
                         </CardContent>
                     </Card>
                 </Link>
+
+                {/* Pending Payments Card */}
+                <Link href="/admin/payments" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Pending Payments
+                            </CardTitle>
+                            <div className="rounded-full bg-green-500/10 p-2 group-hover:bg-green-500/20 transition-colors">
+                                <Banknote className="h-4 w-4 text-green-600 dark:text-green-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{pendingPayments || 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {(pendingPayments ?? 0) > 0 ? 'Reconcile payments →' : 'All cleared'}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* Use new InviteCard component */}
                 <InviteCard inviteLink={inviteLink} businessCode={business?.code || ''} />
+
+                <Card className="col-span-full md:col-span-2 lg:col-span-4">
+                    <CardHeader>
+                        <CardTitle>Verified Customers</CardTitle>
+                        <CardDescription>Customers ready for loan disbursement</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="rounded-full bg-green-500/10 p-4">
+                                <ShieldCheck className="h-8 w-8 text-green-600" />
+                            </div>
+                            <div>
+                                <div className="text-3xl font-bold">{verifiedCustomers || 0}</div>
+                                <p className="text-sm text-muted-foreground">Total Verified Portfolios</p>
+                            </div>
+                        </div>
+                        <Link href="/admin/kyc">
+                            <Button variant="outline">View All</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
 
                 <Card className="col-span-full md:col-span-2 lg:col-span-3">
                     <CardHeader>

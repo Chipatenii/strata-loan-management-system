@@ -16,7 +16,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle, Smartphone, Building2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-export function PaymentForm({ userId, businessId, loans, paymentConfig }: { userId: string, businessId: string, loans: any[], paymentConfig?: any }) {
+export function PaymentForm({
+    userId,
+    businessId,
+    loans,
+    paymentConfig,
+    instructionText
+}: {
+    userId: string,
+    businessId: string,
+    loans: any[],
+    paymentConfig?: any,
+    instructionText?: string
+}) {
     const [pending, startTransition] = useTransition()
     const router = useRouter()
     const [loanId, setLoanId] = useState<string>(loans.length > 0 ? loans[0].id : '')
@@ -64,7 +76,18 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
                 if (error) throw error
 
                 toast.success("Payment Submitted for Verification!")
-                router.push('/portal/payments')
+
+                // Clear form
+                setAmount('')
+                setReference('')
+                setProvider('')
+                setProofFile(null)
+
+                // Refresh data to show pending status or updated balance if immediately handled
+                router.refresh()
+                // If we want to stay on the same page but ensure RSC reloads:
+                // router.push('/portal/payments') // existing
+                // But refresh() is more explicit for RSC updates.
 
             } catch (error: any) {
                 console.error(error)
@@ -82,7 +105,7 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
     }
 
     return (
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg shadow-sm sm:shadow-md mx-auto">
             <CardHeader>
                 <CardTitle>Make a Payment</CardTitle>
                 <CardDescription>
@@ -91,7 +114,28 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
-                    {/* Payment Instructions Alert */}
+                    {/* General Business Payment Instructions */}
+                    {instructionText ? (
+                        <div className="bg-primary/5 rounded-lg border-2 border-primary/20 p-4 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Building2 className="h-5 w-5 text-primary" />
+                                <h3 className="font-bold text-primary">How to Pay</h3>
+                            </div>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                                {instructionText}
+                            </p>
+                        </div>
+                    ) : (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Warning</AlertTitle>
+                            <AlertDescription>
+                                No payment instructions found for this organization. Please contact support.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Method-specific Instructions (Legacy or Additive) */}
                     {method === 'mobile_money' && paymentConfig?.mobile_money_instructions && (
                         <Alert className="bg-blue-50 border-blue-200">
                             <Smartphone className="h-4 w-4 text-blue-600" />
@@ -120,7 +164,12 @@ export function PaymentForm({ userId, businessId, loans, paymentConfig }: { user
                             <SelectContent>
                                 {loans.map(loan => (
                                     <SelectItem key={loan.id} value={loan.id}>
-                                        Loan #{loan.id.slice(0, 6)} • Balance: {formatCurrency(loan.balance || 0)}
+                                        <div className="flex flex-col">
+                                            <span>Loan #{loan.id.slice(0, 6)}</span>
+                                            <span className="text-[10px] opacity-70">
+                                                Paid: {formatCurrency(loan.totalPaid || 0)} | Balance: {formatCurrency(loan.balance || 0)}
+                                            </span>
+                                        </div>
                                     </SelectItem>
                                 ))}
                             </SelectContent>

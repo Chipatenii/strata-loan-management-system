@@ -28,12 +28,15 @@ export default async function KycQueuePage() {
 
     // Fetch KYC records scoped to this business
     // Use !kyc_records_user_id_fkey to specify which foreign key relationship to use
+    // Fetch KYC records scoped to this business
+    // Use relationship hint to fetch user info but filter by kyc_records.business_id
+    // Use relationship hint to fetch user info but filter by kyc_records.business_id
     const { data: records, error: recordsError } = await supabase
         .from('kyc_records')
         .select('*, users!kyc_records_user_id_fkey(full_name, email, business_id)')
-        .eq('status', 'pending_review')
-        .eq('users.business_id', profile?.business_id)
-        .order('created_at', { ascending: true })
+        .in('status', ['pending_review', 'submitted', 'approved'])
+        .eq('business_id', profile?.business_id)
+        .order('created_at', { ascending: false })
 
 
 
@@ -60,9 +63,14 @@ export default async function KycQueuePage() {
                             </div>
                             <p className="text-xs text-muted-foreground truncate">{record.users?.email}</p>
                         </div>
-                        <Badge variant={record.risk_score > 80 ? 'default' : 'destructive'} className="flex-shrink-0">
-                            {record.risk_score || 'N/A'}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <Badge variant={record.status === 'approved' ? 'default' : 'secondary'} className="capitalize">
+                                {record.status.replace('_', ' ')}
+                            </Badge>
+                            <Badge variant={record.risk_score > 80 ? 'default' : 'destructive'} className="text-[10px] h-4">
+                                Risk: {record.risk_score || 'N/A'}
+                            </Badge>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-0">
@@ -144,6 +152,7 @@ export default async function KycQueuePage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>User</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Submitted</TableHead>
                             <TableHead>Risk Score</TableHead>
                             <TableHead>Documents</TableHead>
@@ -163,6 +172,11 @@ export default async function KycQueuePage() {
                                 <TableCell>
                                     <div className="font-medium">{record.users?.full_name || 'Unknown'}</div>
                                     <div className="text-xs text-muted-foreground">{record.users?.email}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={record.status === 'approved' ? 'default' : 'secondary'} className="capitalize">
+                                        {record.status.replace('_', ' ')}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell>

@@ -10,8 +10,9 @@ import {
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
-import { User, Banknote, Calendar, FileText } from "lucide-react"
+import { User, Banknote, Calendar, FileText, History, Clock } from "lucide-react"
 import Link from "next/link"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default async function LoanQueuePage() {
     const supabase = await createClient()
@@ -26,30 +27,32 @@ export default async function LoanQueuePage() {
         .eq('id', user.id)
         .single()
 
-    // Fetch loans scoped to this business
-    // Use !loans_user_id_fkey to specify which foreign key relationship to use
-    const { data: loans, error: loansError } = await supabase
+    // Fetch ALL loans scoped to this business for tabs
+    const { data: allLoans, error: loansError } = await supabase
         .from('loans')
         .select('*, users!loans_user_id_fkey(full_name, email)')
         .eq('business_id', profile?.business_id)
-        .in('status', ['pending', 'submitted', 'under_review'])
-        .order('created_at', { ascending: true })
+        .neq('status', 'rejected') // Still filter out hard rejections if preferred, or include all
+        .order('created_at', { ascending: false })
+
+    const pendingReviewLoans = allLoans?.filter(l => ['pending', 'submitted', 'under_review'].includes(l.status)) || []
+    const historyLoans = allLoans?.filter(l => ['active', 'approved', 'closed', 'defaulted'].includes(l.status)) || []
 
 
 
-    const renderLoanCards = () => {
-        if (!loans || loans.length === 0) {
+    const renderLoanCards = (loansList: any[]) => {
+        if (!loansList || loansList.length === 0) {
             return (
                 <Card>
                     <CardContent className="py-12 text-center text-muted-foreground">
                         <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>No pending loan applications.</p>
+                        <p>No applications found.</p>
                     </CardContent>
                 </Card>
             )
         }
 
-        return loans.map((loan: any) => {
+        return loansList.map((loan: any) => {
             const disbursement = loan.disbursement_details as any
             const methodLabel = loan.disbursement_method === 'mobile_money'
                 ? `Mobile Money (${disbursement?.network || ''})`
@@ -120,7 +123,7 @@ export default async function LoanQueuePage() {
 
     return (
         <div className="space-y-4 md:space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Loan Applications Queue</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Loan Management</h1>
 
             {loansError && (
                 <div className="p-4 bg-destructive/10 text-destructive rounded-md">
@@ -129,78 +132,109 @@ export default async function LoanQueuePage() {
                 </div>
             )}
 
-            {/* Stacked Card View */}
-            <div className="space-y-3">
-                {renderLoanCards()}
-            </div>
+            <Tabs defaultValue="pending" className="w-full">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="pending" className="gap-2">
+                        <Clock className="h-4 w-4" />
+                        Pending Review ({pendingReviewLoans.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="gap-2">
+                        <History className="h-4 w-4" />
+                        Loan History ({historyLoans.length})
+                    </TabsTrigger>
+                </TabsList>
 
-            {/* Table View */}
-            <div className="rounded-md border bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Disbursement</TableHead>
-                            <TableHead>Collateral</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loans?.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                    No pending loan applications.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {loans?.map((loan: any) => {
-                            const disbursement = loan.disbursement_details as any
-                            const methodLabel = loan.disbursement_method === 'mobile_money'
-                                ? `Mobile Money (${disbursement?.network || ''})`
-                                : loan.disbursement_method === 'bank_transfer'
-                                    ? `Bank Transfer (${disbursement?.bank_name || ''})`
-                                    : loan.disbursement_method || '-'
+                <TabsContent value="pending" className="space-y-6">
+                    {/* Stacked Card View - Mobile */}
+                    <div className="md:hidden space-y-3">
+                        {renderLoanCards(pendingReviewLoans)}
+                    </div>
+                    {/* Table View - Desktop */}
+                    <div className="hidden md:block rounded-md border bg-white">
+                        {renderLoanTable(pendingReviewLoans)}
+                    </div>
+                </TabsContent>
 
-                            return (
-                                <TableRow key={loan.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{loan.users?.full_name || 'Unknown'}</div>
-                                        <div className="text-xs text-muted-foreground">{loan.users?.email}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-medium">{formatCurrency(loan.amount)}</div>
-                                        <div className="text-xs text-muted-foreground">{loan.duration_months} Months</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-xs font-medium capitalize">{methodLabel}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {loan.disbursement_method === 'mobile_money' ? disbursement?.number : disbursement?.account_number}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className="text-xs text-muted-foreground">{loan.collateral_description || 'None'}</span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary" className="capitalize">
-                                            {loan.status?.replace('_', ' ')}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Link
-                                            href={`/admin/loans/${loan.id}`}
-                                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                                        >
-                                            Review
-                                        </Link>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            </div>
+                <TabsContent value="history" className="space-y-6">
+                    {/* Stacked Card View - Mobile */}
+                    <div className="md:hidden space-y-3">
+                        {renderLoanCards(historyLoans)}
+                    </div>
+                    {/* Table View - Desktop */}
+                    <div className="hidden md:block rounded-md border bg-white">
+                        {renderLoanTable(historyLoans)}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
+    )
+}
+
+function renderLoanTable(loansList: any[]) {
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Disbursement</TableHead>
+                    <TableHead>Collateral</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {loansList?.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            No records found.
+                        </TableCell>
+                    </TableRow>
+                )}
+                {loansList?.map((loan: any) => {
+                    const disbursement = loan.disbursement_details as any
+                    const methodLabel = loan.disbursement_method === 'mobile_money'
+                        ? `Mobile Money (${disbursement?.network || ''})`
+                        : loan.disbursement_method === 'bank_transfer'
+                            ? `Bank Transfer (${disbursement?.bank_name || ''})`
+                            : loan.disbursement_method || '-'
+
+                    return (
+                        <TableRow key={loan.id}>
+                            <TableCell>
+                                <div className="font-medium">{loan.users?.full_name || 'Unknown'}</div>
+                                <div className="text-xs text-muted-foreground">{loan.users?.email}</div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="font-medium">{formatCurrency(loan.amount)}</div>
+                                <div className="text-xs text-muted-foreground">{loan.duration_months} Months</div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="text-xs font-medium capitalize">{methodLabel}</div>
+                                <div className="text-xs text-muted-foreground">
+                                    {loan.disbursement_method === 'mobile_money' ? disbursement?.number : disbursement?.account_number}
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <span className="text-xs text-muted-foreground">{loan.collateral_description || 'None'}</span>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={loan.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                                    {loan.status?.replace('_', ' ')}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Link
+                                    href={`/admin/loans/${loan.id}`}
+                                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                                >
+                                    View
+                                </Link>
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
+            </TableBody>
+        </Table>
     )
 }

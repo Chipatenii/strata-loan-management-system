@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
+import { calculateOutstandingBalance } from "@/lib/domain/finance"
 import { StatusBadge } from "@/components/ui/status-badge"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,9 +15,19 @@ export default async function LoansListPage() {
 
     const { data: loans } = await supabase
         .from('loans')
-        .select('*')
+        .select(`
+            *,
+            payments(amount, status)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
+
+    const loansWithStats = loans?.map(loan => {
+        const approvedPayments = (loan.payments as any[])?.filter(p => p.status === 'approved') || []
+        const totalPaid = approvedPayments.reduce((sum, p) => sum + Number(p.amount), 0)
+        const balance = calculateOutstandingBalance(loan, approvedPayments)
+        return { ...loan, totalPaid, balance }
+    })
 
     return (
         <div className="space-y-6">
@@ -31,14 +42,14 @@ export default async function LoansListPage() {
             </div>
 
             <div className="grid gap-4">
-                {loans?.length === 0 && (
+                {loansWithStats?.length === 0 && (
                     <Card>
                         <CardContent className="py-8 text-center text-muted-foreground">
                             You have no loan history.
                         </CardContent>
                     </Card>
                 )}
-                {loans?.map((loan: any) => (
+                {loansWithStats?.map((loan: any) => (
                     <Card key={loan.id}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-base font-medium">
@@ -47,10 +58,23 @@ export default async function LoansListPage() {
                             <StatusBadge status={loan.status} />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(loan.amount)}</div>
-                            <p className="text-xs text-muted-foreground">
-                                {loan.duration_months} Months • {loan.purpose}
-                            </p>
+                            <div className="flex items-end justify-between">
+                                <div>
+                                    <div className="text-2xl font-bold">{formatCurrency(loan.amount)}</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {loan.duration_months} Months • {loan.purpose}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-medium text-muted-foreground">Remaining Balance</p>
+                                    <p className={`text-lg font-bold ${loan.balance > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                        {formatCurrency(loan.balance)}
+                                    </p>
+                                    <p className="text-[10px] text-green-600 font-medium">
+                                        Total Paid: {formatCurrency(loan.totalPaid)}
+                                    </p>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 ))}

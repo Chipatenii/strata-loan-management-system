@@ -12,13 +12,15 @@ export function PaymentSettingsForm({ businessId, initialConfig }: { businessId:
     const [pending, startTransition] = useTransition()
     const [mobileMoney, setMobileMoney] = useState(initialConfig.mobile_money_instructions || '')
     const [bankTransfer, setBankTransfer] = useState(initialConfig.bank_transfer_instructions || '')
+    const [generalInstructions, setGeneralInstructions] = useState(initialConfig.general_instructions || '')
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         startTransition(async () => {
             const result = await updatePaymentConfig(businessId, {
                 mobile_money_instructions: mobileMoney,
-                bank_transfer_instructions: bankTransfer
+                bank_transfer_instructions: bankTransfer,
+                general_instructions: generalInstructions
             })
 
             if (result.error) {
@@ -31,6 +33,18 @@ export function PaymentSettingsForm({ businessId, initialConfig }: { businessId:
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+                <Label htmlFor="general_instructions">General Instructions (Shown to all Customers)</Label>
+                <Textarea
+                    id="general_instructions"
+                    placeholder="Enter bank details or general payment rules..."
+                    className="min-h-[100px]"
+                    value={generalInstructions}
+                    onChange={(e) => setGeneralInstructions(e.target.value)}
+                    disabled={pending}
+                />
+            </div>
+
             <div className="space-y-2">
                 <Label htmlFor="mobile_money">Mobile Money Instructions</Label>
                 <Textarea

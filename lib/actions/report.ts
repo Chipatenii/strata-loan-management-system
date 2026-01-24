@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase"
 import { addDays, endOfDay, format, startOfDay, subDays } from "date-fns"
+import { calculateOutstandingBalance } from "@/lib/domain/finance"
 
 export type ReportMetrics = {
     period: {
@@ -66,10 +67,11 @@ export async function getBusinessReports(
         // 3. Fetch Portfolio State (All Active Loans)
         const { data: activeLoans, error: activeError } = await supabase
             .from('loans')
-            .select('id, amount, applied_rate, duration_months, created_at, status, payments(amount, status)')
+            .select('id, amount, applied_rate, total_payable_amount, duration_months, created_at, status, payments(amount, status)')
             .eq('business_id', businessId)
             .neq('status', 'rejected')
             .neq('status', 'closed') // Exclude fully closed/paid loans
+            .in('status', ['active', 'approved', 'defaulted'])
 
         if (activeError) throw activeError
 
@@ -99,28 +101,17 @@ export async function getBusinessReports(
         const now = new Date()
 
         activeLoans.forEach(loan => {
-            if (loan.status === 'active' || loan.status === 'defaulted') {
+            if (loan.status === 'active' || loan.status === 'defaulted' || loan.status === 'approved') {
                 total_active_loans++
 
-                const principal = Number(loan.amount)
-                const rate = Number(loan.applied_rate) / 100
-                const duration = loan.duration_months
-                const totalDue = principal * (1 + (rate * duration))
-
-                // Sum verified payments for this loan
-                // Note: supabase join returns array of payments
-                const paid = (loan.payments as any[])
-                    ?.filter((p: any) => p.status === 'verified')
-                    .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
-
-                const outstanding = Math.max(0, totalDue - paid)
+                // Only count approved payments for the outstanding balance
+                const approvedPayments = (loan.payments as any[])?.filter(p => p.status === 'approved') || []
+                const outstanding = calculateOutstandingBalance(loan, approvedPayments)
                 total_outstanding += outstanding
 
                 // Bad Loan Logic: Created At + Duration Months < Now ??
-                // Or simplified: if status is 'defaulted' (if we had that).
-                // Let's infer bad loan: If (Now > Created + Duration) AND Outstanding > 0
                 const createdAt = new Date(loan.created_at)
-                // Add months
+                const duration = loan.duration_months
                 const dueDate = addDays(createdAt, duration * 30) // Approx
 
                 if (now > dueDate && outstanding > 10) { // Tolerance
