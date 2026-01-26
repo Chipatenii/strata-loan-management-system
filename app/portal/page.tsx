@@ -89,10 +89,10 @@ export default async function PortalDashboard() {
 
     return (
         <div className="space-y-6 px-4 md:px-0 pb-10">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                <Link href="/portal/loans/new">
-                    <Button size="sm" className="gap-2">
+                <Link href="/portal/loans/new" className="w-full sm:w-auto">
+                    <Button size="sm" className="gap-2 w-full sm:w-auto">
                         <Banknote className="h-4 w-4" />
                         Request Loan
                     </Button>

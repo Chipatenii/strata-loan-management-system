@@ -37,13 +37,13 @@ export function InviteCard({ inviteLink, businessCode }: InviteCardProps) {
             <CardContent className="space-y-4">
                 {/* Mobile-first responsive layout */}
                 <div className="flex flex-col md:flex-row gap-3 md:gap-2">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 min-h-0">
                         <label htmlFor="invite-link" className="sr-only">Invite Link</label>
                         <div
                             id="invite-link"
-                            className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground overflow-hidden"
+                            className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground"
                         >
-                            <span className="truncate">{inviteLink}</span>
+                            <span className="truncate block w-full">{inviteLink}</span>
                         </div>
                     </div>
                     <Button

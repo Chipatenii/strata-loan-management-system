@@ -77,7 +77,9 @@ export default async function AdminDashboard() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
+            </div>
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -145,7 +147,7 @@ export default async function AdminDashboard() {
                 </Link>
 
                 {/* Outstanding Balance - Warning metric */}
-                <Link href="/admin/reports" className="block md:col-start-4">
+                <Link href="/admin/reports" className="block lg:col-start-4">
                     <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
                         <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -196,7 +198,7 @@ export default async function AdminDashboard() {
                         <CardTitle>Verified Customers</CardTitle>
                         <CardDescription>Customers ready for loan disbursement</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex items-center justify-between">
+                    <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className="rounded-full bg-green-500/10 p-4">
                                 <ShieldCheck className="h-8 w-8 text-green-600" />
@@ -206,8 +208,8 @@ export default async function AdminDashboard() {
                                 <p className="text-sm text-muted-foreground">Total Verified Portfolios</p>
                             </div>
                         </div>
-                        <Link href="/admin/kyc">
-                            <Button variant="outline">View All</Button>
+                        <Link href="/admin/kyc" className="w-full sm:w-auto">
+                            <Button variant="outline" className="w-full sm:w-auto">View All</Button>
                         </Link>
                     </CardContent>
                 </Card>
