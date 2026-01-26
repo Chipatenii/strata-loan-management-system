@@ -79,18 +79,16 @@ export function SidebarNav({ className, mobile, onItemClick }: SidebarNavProps) 
                 )
             })}
 
-            {!mobile && (
-                <div className="mt-auto px-3 py-2">
-                    <Button
-                        variant="ghost"
-                        className="w-full justify-start gap-3 p-0 h-auto text-red-500 hover:text-red-600 hover:bg-transparent"
-                        onClick={() => signout()}
-                    >
-                        <LogOut className="h-4 w-4" />
-                        Sign Out
-                    </Button>
-                </div>
-            )}
+            <div className="mt-auto px-3 py-2">
+                <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 p-0 h-auto text-red-500 hover:text-red-600 hover:bg-transparent"
+                    onClick={() => signout()}
+                >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                </Button>
+            </div>
         </nav>
     )
 }
