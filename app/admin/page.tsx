@@ -81,11 +81,11 @@ export default async function AdminDashboard() {
                 <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
             </div>
 
-            {/* KPI Cards */}
+            {/* KPI Cards Area */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Total Disbursed - Success metric */}
+                {/* Total Disbursed */}
                 <Link href="/admin/reports" className="block">
-                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -104,9 +104,9 @@ export default async function AdminDashboard() {
                     </Card>
                 </Link>
 
-                {/* Pending KYC - Requires attention */}
+                {/* Pending KYC */}
                 <Link href="/admin/kyc" className="block">
-                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -125,9 +125,9 @@ export default async function AdminDashboard() {
                     </Card>
                 </Link>
 
-                {/* Pending Loans - Requires attention */}
+                {/* Pending Loans */}
                 <Link href="/admin/loans" className="block">
-                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -146,9 +146,9 @@ export default async function AdminDashboard() {
                     </Card>
                 </Link>
 
-                {/* Outstanding Balance - Warning metric */}
-                <Link href="/admin/reports" className="block lg:col-start-4">
-                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                {/* Outstanding Balance */}
+                <Link href="/admin/reports" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -169,7 +169,7 @@ export default async function AdminDashboard() {
 
                 {/* Pending Payments Card */}
                 <Link href="/admin/payments" className="block">
-                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent" />
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -187,60 +187,62 @@ export default async function AdminDashboard() {
                         </CardContent>
                     </Card>
                 </Link>
+
+                {/* Verified Customers Card */}
+                <Link href="/admin/kyc" className="block">
+                    <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group h-full">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent" />
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Verified Customers
+                            </CardTitle>
+                            <div className="rounded-full bg-blue-500/10 p-2 group-hover:bg-blue-500/20 transition-colors">
+                                <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="text-2xl font-bold">{verifiedCustomers || 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Customers ready for disbursement
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                {/* Use new InviteCard component */}
-                <InviteCard inviteLink={inviteLink} businessCode={business?.code || ''} />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                {/* Invite Card and Quick Actions */}
+                <div className="col-span-full lg:col-span-4">
+                    <InviteCard inviteLink={inviteLink} businessCode={business?.code || ''} />
+                </div>
 
-                <Card className="col-span-full md:col-span-2 lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>Verified Customers</CardTitle>
-                        <CardDescription>Customers ready for loan disbursement</CardDescription>
+                <Card className="col-span-full lg:col-span-3">
+                    <CardHeader className="pb-3 px-6 pt-6">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="rounded-full bg-green-500/10 p-4">
-                                <ShieldCheck className="h-8 w-8 text-green-600" />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold">{verifiedCustomers || 0}</div>
-                                <p className="text-sm text-muted-foreground">Total Verified Portfolios</p>
-                            </div>
-                        </div>
-                        <Link href="/admin/kyc" className="w-full sm:w-auto">
-                            <Button variant="outline" className="w-full sm:w-auto">View All</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-
-                <Card className="col-span-full md:col-span-2 lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
+                    <CardContent className="grid grid-cols-2 gap-4 pb-6 px-6">
                         <Link href="/admin/products" className="w-full">
-                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
-                                <Plus className="h-6 w-6" />
-                                <span className="text-xs font-semibold">New Product</span>
+                            <Button variant="outline" className="h-20 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <Plus className="h-5 w-5" />
+                                <span className="text-[10px] uppercase tracking-wider font-bold">New Product</span>
                             </Button>
                         </Link>
                         <Link href="/admin/loans" className="w-full">
-                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
-                                <FileText className="h-6 w-6" />
-                                <span className="text-xs font-semibold">Review Loans</span>
+                            <Button variant="outline" className="h-20 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <FileText className="h-5 w-5" />
+                                <span className="text-[10px] uppercase tracking-wider font-bold">Review Loans</span>
                             </Button>
                         </Link>
                         <Link href="/admin/payments" className="w-full">
-                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
-                                <Banknote className="h-6 w-6" />
-                                <span className="text-xs font-semibold">Record Pay</span>
+                            <Button variant="outline" className="h-20 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <Banknote className="h-5 w-5" />
+                                <span className="text-[10px] uppercase tracking-wider font-bold">Record Pay</span>
                             </Button>
                         </Link>
                         <Link href="/admin/reports" className="w-full">
-                            <Button variant="outline" className="h-24 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
-                                <BarChart3 className="h-6 w-6" />
-                                <span className="text-xs font-semibold">View Reports</span>
+                            <Button variant="outline" className="h-20 w-full flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
+                                <BarChart3 className="h-5 w-5" />
+                                <span className="text-[10px] uppercase tracking-wider font-bold">View Reports</span>
                             </Button>
                         </Link>
                     </CardContent>
