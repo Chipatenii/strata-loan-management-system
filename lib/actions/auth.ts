@@ -86,7 +86,7 @@ export const signUpAdmin = withServerAction(
         const code = 'BIZ' + Math.floor(100000 + Math.random() * 900000).toString()
 
         const { data: businessData, error: businessError } = await adminSupabase
-            .from(' businesses')
+            .from('businesses')
             .insert({
                 name: formData.businessName,
                 code: code,
