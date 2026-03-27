@@ -79,51 +79,66 @@ export const signUpAdmin = withServerAction(
             throw normalizeSupabaseError(authError || new Error('Signup failed'), 'auth/signUpAdmin/signup', requestId)
         }
 
+        if (authData.user.identities && authData.user.identities.length === 0) {
+            throw createAppError({
+                code: ErrorCode.VALIDATION_FAILED,
+                message: 'This email is already registered. Please sign in or use a different email.',
+                location: 'auth/signUpAdmin/checkExisting',
+                requestId
+            })
+        }
+
         const userId = authData.user.id
 
-        // 2. Create Business
-        // Generate simple 6-char code
-        const code = 'BIZ' + Math.floor(100000 + Math.random() * 900000).toString()
+        try {
+            // 2. Create Business
+            // Generate simple 6-char code
+            const code = 'BIZ' + Math.floor(100000 + Math.random() * 900000).toString()
 
-        const { data: businessData, error: businessError } = await adminSupabase
-            .from('businesses')
-            .insert({
-                name: formData.businessName,
-                code: code,
-            })
-            .select()
-            .single()
+            const { data: businessData, error: businessError } = await adminSupabase
+                .from('businesses')
+                .insert({
+                    name: formData.businessName,
+                    code: code,
+                })
+                .select()
+                .single()
 
-        if (businessError) {
-            throw normalizeSupabaseError(businessError, 'auth/signUpAdmin/createBusiness', requestId)
-        }
+            if (businessError) {
+                throw normalizeSupabaseError(businessError, 'auth/signUpAdmin/createBusiness', requestId)
+            }
 
-        // 3. Create Public User Profile
-        const { error: userError } = await adminSupabase
-            .from('users')
-            .insert({
-                id: userId,
-                email: formData.email,
-                role: 'admin', // Legacy role field
-                business_id: businessData.id,
-                full_name: 'Admin', // Placeholder
-            })
+            // 3. Create Public User Profile
+            const { error: userError } = await adminSupabase
+                .from('users')
+                .insert({
+                    id: userId,
+                    email: formData.email,
+                    role: 'admin', // Legacy role field
+                    business_id: businessData.id,
+                    full_name: 'Admin', // Placeholder
+                })
 
-        if (userError) {
-            throw normalizeSupabaseError(userError, 'auth/signUpAdmin/createUser', requestId)
-        }
+            if (userError) {
+                throw normalizeSupabaseError(userError, 'auth/signUpAdmin/createUser', requestId)
+            }
 
-        // 4. Create Membership
-        const { error: memberError } = await adminSupabase
-            .from('business_memberships')
-            .insert({
-                user_id: userId,
-                business_id: businessData.id,
-                role: 'admin',
-            })
+            // 4. Create Membership
+            const { error: memberError } = await adminSupabase
+                .from('business_memberships')
+                .insert({
+                    user_id: userId,
+                    business_id: businessData.id,
+                    role: 'admin',
+                })
 
-        if (memberError) {
-            throw normalizeSupabaseError(memberError, 'auth/signUpAdmin/createMembership', requestId)
+            if (memberError) {
+                throw normalizeSupabaseError(memberError, 'auth/signUpAdmin/createMembership', requestId)
+            }
+        } catch (err) {
+            // Rollback auth user creation if profile creation fails
+            await adminSupabase.auth.admin.deleteUser(userId)
+            throw err
         }
 
         revalidatePath('/', 'layout')
@@ -169,23 +184,38 @@ export const signUpCustomer = withServerAction(
             throw normalizeSupabaseError(authError || new Error('Signup failed'), 'auth/signUpCustomer/signup', requestId)
         }
 
+        if (authData.user.identities && authData.user.identities.length === 0) {
+            throw createAppError({
+                code: ErrorCode.VALIDATION_FAILED,
+                message: 'This email is already registered. Please sign in or use a different email.',
+                location: 'auth/signUpCustomer/checkExisting',
+                requestId
+            })
+        }
+
         const userId = authData.user.id
 
-        // 3. Create Public User Profile
-        const { error: userError } = await adminSupabase
-            .from('users')
-            .insert({
-                id: userId,
-                email: formData.email,
-                role: 'customer',
-                business_id: businessData.id,
-                full_name: formData.fullName,
-                phone: formData.phone,
-                address: formData.address,
-            })
+        try {
+            // 3. Create Public User Profile
+            const { error: userError } = await adminSupabase
+                .from('users')
+                .insert({
+                    id: userId,
+                    email: formData.email,
+                    role: 'customer',
+                    business_id: businessData.id,
+                    full_name: formData.fullName,
+                    phone: formData.phone,
+                    address: formData.address,
+                })
 
-        if (userError) {
-            throw normalizeSupabaseError(userError, 'auth/signUpCustomer/createUser', requestId)
+            if (userError) {
+                throw normalizeSupabaseError(userError, 'auth/signUpCustomer/createUser', requestId)
+            }
+        } catch (err) {
+            // Rollback auth user creation if profile creation fails
+            await adminSupabase.auth.admin.deleteUser(userId)
+            throw err
         }
 
         revalidatePath('/', 'layout')
