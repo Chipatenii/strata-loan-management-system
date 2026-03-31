@@ -35,12 +35,12 @@ export default async function AdminLoanDetailPage({ params }: { params: Promise<
 
     if (!loan) notFound()
 
-    // Fetch KYC
+    // Fetch KYC (may not exist yet)
     const { data: kyc } = await supabase
         .from('kyc_records')
         .select('*')
         .eq('user_id', loan.user_id)
-        .single()
+        .maybeSingle()
 
     const disbursement = loan.disbursement_details as any
 
@@ -207,8 +207,8 @@ export default async function AdminLoanDetailPage({ params }: { params: Promise<
                             )}
 
                             <div className="pt-4 border-t">
-                                <Link href={`/admin/customers/${loan.user_id}`} className="text-xs text-primary underline">
-                                    View Full Customer Profile
+                                <Link href="/admin/customers" className="text-xs text-primary underline">
+                                    View All Customers
                                 </Link>
                             </div>
                         </CardContent>

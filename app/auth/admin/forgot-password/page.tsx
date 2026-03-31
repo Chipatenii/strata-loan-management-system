@@ -19,8 +19,11 @@ export default function AdminForgotPassword() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         startTransition(async () => {
-            await forgotPassword({ email }, 'admin')
-            // Always show success to prevent email enumeration
+            const result = await forgotPassword({ email }, 'admin')
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
             setSent(true)
             toast.success("If an account exists, a reset link has been sent.")
         })

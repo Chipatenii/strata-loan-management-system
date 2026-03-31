@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { withServerActionThrows, createAppError, ErrorCode, normalizeSupabaseError } from '@/lib/errors'
+import { withServerActionThrows, createAppError, ErrorCode, normalizeSupabaseError, requireAdminMembership } from '@/lib/errors'
 import { revalidatePath } from 'next/cache'
 
 export const reconcilePayment = withServerActionThrows(
@@ -12,6 +12,25 @@ export const reconcilePayment = withServerActionThrows(
         if (!user) {
             throw createAppError({ code: ErrorCode.AUTH_REQUIRED, message: 'Unauthorized', requestId, location: 'payment/reconcilePayment' })
         }
+
+        // Fetch payment to get business_id for authorization check
+        const { data: payment, error: fetchError } = await supabase
+            .from('payments')
+            .select('business_id')
+            .eq('id', paymentId)
+            .single()
+
+        if (fetchError || !payment) {
+            throw createAppError({
+                code: ErrorCode.NOT_FOUND,
+                message: 'Payment not found',
+                requestId,
+                location: 'payment/reconcilePayment/fetch'
+            })
+        }
+
+        // Verify admin membership for the payment's business
+        await requireAdminMembership(supabase, payment.business_id, requestId, 'payment/reconcilePayment')
 
         // Use RPC to handle reconciliation atomically (prevents race conditions)
         const { data, error } = await supabase.rpc('reconcile_payment', {

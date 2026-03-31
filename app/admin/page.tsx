@@ -14,10 +14,13 @@ export default async function AdminDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return <div>Not authenticated</div>
 
-  const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
-  const { data: business } = await supabase.from('businesses').select('id, name, code').eq('id', profile?.business_id).single()
-  const inviteLink = `${getAppOrigin()}/auth/customer/sign-up?code=${business?.code}`
+  const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).maybeSingle()
+  if (!profile?.business_id) return <div className="p-8 text-center text-muted-foreground">User profile not found. Please contact support.</div>
+
+  const { data: business } = await supabase.from('businesses').select('id, name, code').eq('id', profile.business_id).maybeSingle()
   if (!business) return <div className="p-8 text-center text-muted-foreground">Business configuration not found.</div>
+
+  const inviteLink = `${getAppOrigin()}/auth/customer/sign-up?code=${business.code}`
 
   const { count: pendingLoans } = await supabase
     .from('loans').select('*', { count: 'exact', head: true })

@@ -98,23 +98,19 @@ export const submitLoanApplication = withServerAction(
         const financials = calculateSimpleInterest(principal, interestRate, durationMonths)
 
         // Insert loan application
-        const { error } = await supabase.from('loans').insert({
+        const { data: loanData, error } = await supabase.from('loans').insert({
             user_id: formData.userId,
             business_id: formData.businessId,
             product_id: formData.productId,
             amount: principal,
             purpose: formData.purpose,
-            status: 'pending_review',
-            employment_status: formData.employmentStatus,
-            monthly_income: parseFloat(formData.monthlyIncome),
-            collateral_type: formData.collateralType || null,
-            collateral_value: formData.collateralValue ? parseFloat(formData.collateralValue) : null,
+            status: 'submitted',
             collateral_description: formData.collateralDescription || null,
-            collateral_image_urls: collateralUrls.length > 0 ? collateralUrls : null,
 
             // Domain Calculated Values
             principal_amount: financials.principal,
             interest_rate: interestRate,
+            applied_rate: interestRate,
             interest_rate_pct_used: interestRate,
             interest_amount: financials.interest,
             total_payable_amount: financials.total,
@@ -123,12 +119,29 @@ export const submitLoanApplication = withServerAction(
             data: {
                 submitted_at: new Date().toISOString(),
                 requestId,
-                rate_id: formData.rateId
+                rate_id: formData.rateId,
+                employment_status: formData.employmentStatus,
+                monthly_income: formData.monthlyIncome,
+                collateral_type: formData.collateralType || null,
+                collateral_value: formData.collateralValue || null,
             }
-        })
+        }).select('id').single()
 
-        if (error) {
-            throw normalizeSupabaseError(error, 'loans/submitLoanApplication/insert', requestId)
+        if (error || !loanData) {
+            throw normalizeSupabaseError(error || new Error('Failed to create loan'), 'loans/submitLoanApplication/insert', requestId)
+        }
+
+        // Insert collateral images into loan_collateral table
+        if (collateralUrls.length > 0) {
+            const collateralRows = collateralUrls.map(url => ({
+                loan_id: loanData.id,
+                image_url: url,
+                description: formData.collateralDescription || null,
+            }))
+            const { error: colError } = await supabase.from('loan_collateral').insert(collateralRows)
+            if (colError) {
+                console.error('Failed to insert collateral records:', colError)
+            }
         }
 
         revalidatePath('/portal/loans')

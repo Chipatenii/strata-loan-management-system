@@ -18,8 +18,11 @@ export default function CustomerForgotPassword() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         startTransition(async () => {
-            await forgotPassword({ email }, 'customer')
-            // Always show success
+            const result = await forgotPassword({ email }, 'customer')
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
             setSent(true)
             toast.success("If an account exists, a reset link has been sent.")
         })

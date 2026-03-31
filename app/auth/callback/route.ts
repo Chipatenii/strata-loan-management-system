@@ -10,14 +10,19 @@ export async function GET(request: NextRequest) {
     console.log('[Auth Callback] Code present:', !!code, 'Next:', next)
 
     if (code) {
+        // Track cookies that need to be set on the response
+        const cookiesToSetOnResponse: { name: string, value: string, options: CookieOptions }[] = []
+
         const cookieStore = {
             getAll() {
                 return request.cookies.getAll()
             },
             setAll(cookiesToSet: { name: string, value: string, options: CookieOptions }[]) {
-                cookiesToSet.forEach(({ name, value, options }) =>
+                cookiesToSet.forEach(({ name, value }) =>
                     request.cookies.set(name, value)
                 )
+                // Accumulate cookies to set on the response later
+                cookiesToSetOnResponse.push(...cookiesToSet)
             },
         }
 
@@ -32,8 +37,12 @@ export async function GET(request: NextRequest) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
-            // Forward to the "next" path (e.g. /auth/customer/reset-password)
-            return NextResponse.redirect(`${origin}${next}`)
+            const response = NextResponse.redirect(`${origin}${next}`)
+            // Propagate auth cookies to the response
+            cookiesToSetOnResponse.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, options)
+            })
+            return response
         }
     }
 

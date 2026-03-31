@@ -3,22 +3,7 @@ import { createClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { redirect } from "next/navigation"
 import { CreditCard, AlertCircle } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
 import { calculateOutstandingBalance } from "@/lib/domain/finance"
-
-async function getLoanFinancials(supabase: any, loanId: string): Promise<{ balance: number, totalPaid: number }> {
-    const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('loan_id', loanId)
-        .eq('status', 'approved')
-
-    const totalPaid = payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
-
-    // We need to fetch the loan to get totals if the provided list lacks it, 
-    // but here we already have it in the map below.
-    return { balance: 0, totalPaid } // Balance calculated in map to avoid double loan fetch
-}
 
 export default async function NewPaymentPage() {
     const supabase = await createClient()
@@ -26,30 +11,27 @@ export default async function NewPaymentPage() {
 
     if (!user) redirect('/auth/customer/login')
 
-    // Fetch active loans
+    // Fetch active loans with their approved payments in a single query
     const { data: loans } = await supabase
         .from('loans')
-        .select('id, amount, total_payable_amount, purpose, status, duration_months')
+        .select('id, amount, total_payable_amount, purpose, status, duration_months, payments(amount, status)')
         .eq('user_id', user.id)
         .in('status', ['active', 'approved', 'defaulted'])
 
     // Get Business Config
-    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).single()
-    const { data: business } = await supabase.from('businesses').select('payment_config').eq('id', profile?.business_id).single()
+    const { data: profile } = await supabase.from('users').select('business_id').eq('id', user.id).maybeSingle()
+    const { data: business } = await supabase.from('businesses').select('payment_config').eq('id', profile?.business_id).maybeSingle()
 
     const paymentConfig = business?.payment_config || {}
     const paymentInstructions = paymentConfig.general_instructions || ""
 
-    // Fetch balances for each loan
-    const loansWithBalance = await Promise.all(
-        (loans || []).map(async (loan: any) => {
-            const { totalPaid } = await getLoanFinancials(supabase, loan.id)
-            // Use calculateOutstandingBalance instead of ledger for consistency
-            const { data: payments } = await supabase.from('payments').select('amount').eq('loan_id', loan.id).eq('status', 'approved')
-            const balance = calculateOutstandingBalance(loan, payments)
-            return { ...loan, balance, totalPaid }
-        })
-    )
+    // Calculate balances from the joined data (no extra queries)
+    const loansWithBalance = (loans || []).map((loan: any) => {
+        const approvedPayments = (loan.payments as any[])?.filter((p: any) => p.status === 'approved') || []
+        const totalPaid = approvedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+        const balance = calculateOutstandingBalance(loan, approvedPayments)
+        return { ...loan, balance, totalPaid, payments: undefined }
+    })
 
     return (
         <div className="space-y-6 px-4 md:px-0 pb-10">

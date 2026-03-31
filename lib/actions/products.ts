@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { loanProductSchema, loanProductRateSchema } from '@/lib/schemas'
+import { requireAdminMembership } from '@/lib/errors'
 
 export async function createLoanProduct(
     formData: z.infer<typeof loanProductSchema>,
@@ -11,6 +12,9 @@ export async function createLoanProduct(
     initialRates?: Omit<z.infer<typeof loanProductRateSchema>, 'product_id'>[]
 ) {
     const supabase = await createClient()
+
+    // Verify admin membership
+    await requireAdminMembership(supabase, businessId, 'n/a', 'products/createLoanProduct')
 
     const { data, error } = await supabase.from('loan_products').insert({
         business_id: businessId,
@@ -33,9 +37,6 @@ export async function createLoanProduct(
         const { error: ratesError } = await supabase.from('loan_product_rates').insert(ratesToInsert)
 
         if (ratesError) {
-            // Optional: Should we rollback product creation? Supabase doesn't have easy multi-table transactions via JS client 
-            // without RPC. For now, we'll return a warning or error but the product exists.
-            // A better way would be an RPC function, but keeping it simple as per "Do not rebuild".
             return { error: 'Product created but failed to save rates: ' + ratesError.message }
         }
     }
@@ -46,6 +47,12 @@ export async function createLoanProduct(
 
 export async function updateLoanProduct(id: string, formData: Partial<z.infer<typeof loanProductSchema>>) {
     const supabase = await createClient()
+
+    // Fetch the product to get its business_id
+    const { data: product } = await supabase.from('loan_products').select('business_id').eq('id', id).single()
+    if (!product) return { error: 'Product not found' }
+
+    await requireAdminMembership(supabase, product.business_id, 'n/a', 'products/updateLoanProduct')
 
     const { error } = await supabase.from('loan_products')
         .update(formData)
@@ -62,6 +69,12 @@ export async function updateLoanProduct(id: string, formData: Partial<z.infer<ty
 export async function createProductRate(formData: z.infer<typeof loanProductRateSchema>) {
     const supabase = await createClient()
 
+    // Fetch the product to get its business_id
+    const { data: product } = await supabase.from('loan_products').select('business_id').eq('id', formData.product_id).single()
+    if (!product) return { error: 'Product not found' }
+
+    await requireAdminMembership(supabase, product.business_id, 'n/a', 'products/createProductRate')
+
     const { error } = await supabase.from('loan_product_rates').insert(formData)
 
     if (error) {
@@ -74,6 +87,20 @@ export async function createProductRate(formData: z.infer<typeof loanProductRate
 
 export async function deleteProductRate(id: string) {
     const supabase = await createClient()
+
+    // Fetch the rate -> product -> business_id
+    const { data: rate } = await supabase
+        .from('loan_product_rates')
+        .select('product_id, loan_products(business_id)')
+        .eq('id', id)
+        .single()
+
+    if (!rate) return { error: 'Rate not found' }
+
+    const businessId = (rate.loan_products as any)?.business_id
+    if (!businessId) return { error: 'Product not found' }
+
+    await requireAdminMembership(supabase, businessId, 'n/a', 'products/deleteProductRate')
 
     const { error } = await supabase.from('loan_product_rates').delete().eq('id', id)
 

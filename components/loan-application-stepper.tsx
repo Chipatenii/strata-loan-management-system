@@ -111,6 +111,10 @@ export function LoanApplicationStepper({ userId, businessId, products, kycStatus
 
     const handleSubmit = async () => {
         if (!selectedProduct || !selectedRate || !repaymentPreview) return
+        if (selectedProduct.requires_collateral && collateralFiles.length < 4) {
+            showErrorToast('Please upload at least 4 collateral photos')
+            return
+        }
 
         startTransition(async () => {
             try {

@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { withServerAction, ErrorCode, createAppError, normalizeSupabaseError } from '@/lib/errors'
+import { withServerAction, normalizeSupabaseError, requireAdminMembership } from '@/lib/errors'
 import { revalidatePath } from 'next/cache'
 
 type ApproveLoanData = {
@@ -19,16 +19,7 @@ type RejectLoanData = {
 export const approveLoan = withServerAction(
     async (requestId, { loanId, businessId, notes }: ApproveLoanData) => {
         const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
-            throw createAppError({
-                code: ErrorCode.AUTH_REQUIRED,
-                message: 'Must be logged in',
-                location: 'loans/approveLoan/auth',
-                requestId
-            })
-        }
+        const user = await requireAdminMembership(supabase, businessId, requestId, 'loans/approveLoan')
 
         // Update loan status
         const { error: updateError } = await supabase
@@ -60,7 +51,6 @@ export const approveLoan = withServerAction(
 
         if (auditError) {
             console.error('Failed to create audit log:', auditError)
-            // Don't fail the whole operation for audit log failure
         }
 
         revalidatePath('/admin/loans')
@@ -74,16 +64,7 @@ export const approveLoan = withServerAction(
 export const rejectLoan = withServerAction(
     async (requestId, { loanId, businessId, notes }: RejectLoanData) => {
         const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
-            throw createAppError({
-                code: ErrorCode.AUTH_REQUIRED,
-                message: 'Must be logged in',
-                location: 'loans/rejectLoan/auth',
-                requestId
-            })
-        }
+        const user = await requireAdminMembership(supabase, businessId, requestId, 'loans/rejectLoan')
 
         // Update loan status
         const { error: updateError } = await supabase

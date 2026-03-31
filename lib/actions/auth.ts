@@ -224,9 +224,16 @@ export const signUpCustomer = withServerAction(
     'auth/signUpCustomer'
 )
 
-export async function signout() {
+export async function signout(userType?: 'admin' | 'customer') {
     const supabase = await createClient()
+
+    // Determine user role before signing out if not provided
+    if (!userType) {
+        const { data: { user } } = await supabase.auth.getUser()
+        userType = user?.user_metadata?.role === 'admin' ? 'admin' : 'customer'
+    }
+
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
-    redirect('/auth/customer/login') // Default redirect
+    redirect(userType === 'admin' ? '/auth/admin/login' : '/auth/customer/login')
 }

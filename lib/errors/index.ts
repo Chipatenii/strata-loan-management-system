@@ -42,3 +42,6 @@ export {
     generateClientRequestId,
     type ErrorResponse
 } from './client-handler'
+
+// Authorization helpers
+export { requireAdminMembership } from './authorization'

@@ -37,7 +37,7 @@ export async function getBusinessReports(
         // 1. Fetch Loans created in Period
         const { data: newLoans, error: loanError } = await supabase
             .from('loans')
-            .select('amount, applied_rate, duration_months, created_at')
+            .select('amount, interest_rate, duration_months, created_at')
             .eq('business_id', businessId)
             .gte('created_at', fromISO)
             .lte('created_at', toISO)
@@ -67,7 +67,7 @@ export async function getBusinessReports(
         // 3. Fetch Portfolio State (All Active Loans)
         const { data: activeLoans, error: activeError } = await supabase
             .from('loans')
-            .select('id, amount, applied_rate, total_payable_amount, duration_months, created_at, status, payments(amount, status)')
+            .select('id, amount, interest_rate, total_payable_amount, duration_months, created_at, status, payments(amount, status)')
             .eq('business_id', businessId)
             .neq('status', 'rejected')
             .neq('status', 'closed') // Exclude fully closed/paid loans
@@ -85,7 +85,7 @@ export async function getBusinessReports(
         // Rate is % per month. Duration is months.
         const interest_expected = newLoans.reduce((sum, l) => {
             const principal = Number(l.amount)
-            const rate = Number(l.applied_rate) / 100
+            const rate = Number(l.interest_rate) / 100
             const duration = l.duration_months
             // Simple interest per month
             return sum + (principal * rate * duration)

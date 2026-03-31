@@ -67,7 +67,7 @@ export default async function KycQueuePage() {
                             <Badge variant={record.status === 'approved' ? 'default' : 'secondary'} className="capitalize">
                                 {record.status.replace('_', ' ')}
                             </Badge>
-                            <Badge variant={record.risk_score > 80 ? 'default' : 'destructive'} className="text-[10px] h-4">
+                            <Badge variant={record.risk_score <= 80 ? 'default' : 'destructive'} className="text-[10px] h-4">
                                 Risk: {record.risk_score || 'N/A'}
                             </Badge>
                         </div>
@@ -180,7 +180,7 @@ export default async function KycQueuePage() {
                                 </TableCell>
                                 <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell>
-                                    <Badge variant={record.risk_score > 80 ? 'default' : 'destructive'}>
+                                    <Badge variant={record.risk_score <= 80 ? 'default' : 'destructive'}>
                                         {record.risk_score || 'N/A'}
                                     </Badge>
                                 </TableCell>
